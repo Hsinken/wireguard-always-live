@@ -41,6 +41,8 @@ check() { # name, then the command that must succeed
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 work=$(cd "$work" && pwd -P)
+script_rel=packaging/macos/make-release.sh
+archive_ext=zip
 for name in $(compgen -e); do
     case "$name" in
     CARGO_TARGET_*_RUSTFLAGS) unset "$name" ;;
@@ -77,12 +79,28 @@ create)
     if [ -n "${FAKE_DITTO_EXTRA:-}" ]; then
         printf '%s' "$FAKE_DITTO_EXTRA" >"${args[0]}/extra-entry"
     fi
-    tar -cf "${args[1]}" -- "${args[0]}"
-    rm -f -- "${args[0]}/extra-entry"
+    if [ -n "${FAKE_DITTO_HIDDEN:-}" ]; then
+        printf '%s' "$FAKE_DITTO_HIDDEN" >"${args[0]}/hidden-entry"
+    fi
+    if [ -n "${FAKE_DITTO_EXTRA_ROOT:-}" ]; then
+        printf '%s' "$FAKE_DITTO_EXTRA_ROOT" >extra-root.txt
+        tar -cf "${args[1]}" -- "${args[0]}" extra-root.txt
+    else
+        tar -cf "${args[1]}" -- "${args[0]}"
+    fi
+    rm -f -- "${args[0]}/extra-entry" "${args[0]}/hidden-entry"
     ;;
-extract) tar -xf "${args[0]}" -C "${args[1]}" ;;
+# An entry an unpacker leaves out, as metadata may be, is not unpacked.
+extract) tar -xf "${args[0]}" -C "${args[1]}" --exclude '*hidden-entry' ;;
 esac
 EOF
+# zipinfo -1 lists the stand-in archive's members (a tar file here).
+cat >"$work/bin/zipinfo" <<'EOF'
+#!/usr/bin/env bash
+[ "$1" = -1 ] || exit 64
+exec tar -tf "$2"
+EOF
+chmod +x "$work/bin/zipinfo"
 # codesign does nothing, but fails to verify the unpacked app when
 # FAKE_CODESIGN_FAIL is set.
 cat >"$work/bin/codesign" <<'EOF'
@@ -197,6 +215,10 @@ if [ -n "\$create" ] && [ -n "\${FAKE_TAR_EXTRA:-}" ]; then
     rm -f -- "\$dir/\$last/extra"
     exit "\$rc"
 fi
+if [ -n "\$create" ] && [ -n "\${FAKE_TAR_EXTRA_ROOT:-}" ]; then
+    printf '%s' "\$FAKE_TAR_EXTRA_ROOT" >"\$dir/extra-root.txt"
+    exec "$real_tar" "\${args[@]}" extra-root.txt
+fi
 exec "$real_tar" "\${args[@]}"
 EOF
 chmod +x "$work/tarbin/tar"
@@ -204,6 +226,13 @@ chmod +x "$work/tarbin/tar"
 real_hash=$(command -v shasum)
 cat >"$work/hashbin/shasum" <<EOF
 #!/usr/bin/env bash
+# FAKE_HASH_BAD: a file whose hash is printed right, then failed.
+for a in "\$@"; do
+    if [ -n "\${FAKE_HASH_BAD:-}" ] && [ "\$a" = "\$FAKE_HASH_BAD" ]; then
+        "$real_hash" "\$@"
+        exit 1
+    fi
+done
 if [ -n "\${FAKE_HASH_FAIL:-}" ]; then
     for a in "\$@"; do case "\$a" in *.zip) exit 1 ;; esac; done
 fi
@@ -444,10 +473,41 @@ run "FAKE_DITTO_EXTRA=$repo"
 check "an archive with another file: refused" refused_with "the archive holds other files than the release"
 check "an archive with another file: nothing packed" nothing_packed
 check "an archive with another file: the path is not printed" no_path_printed
+run "FAKE_DITTO_EXTRA_ROOT=$repo"
+check "an archive with a file beside the release's folder: refused" refused_with "the archive holds other files than the release"
+check "an archive with a file beside the release's folder: nothing packed" nothing_packed
+check "an archive with a file beside the release's folder: the path is not printed" no_path_printed
+run "FAKE_DITTO_HIDDEN=$repo"
+check "an archive with an entry the unpacker leaves out: refused" refused_with "the archive holds other files than the release"
+check "an archive with an entry the unpacker leaves out: nothing packed" nothing_packed
 run FAKE_CODESIGN_FAIL=1
 check "an unpacked app that does not verify: refused" refused_with "the app in the archive is not validly signed"
 check "an unpacked app that does not verify: nothing packed" nothing_packed
 # --- End of the archive checks.
+
+# A hash that fails, after printing the right sum, packs nothing.
+run "PATH=$work/hashbin:$work/bin:$PATH" FAKE_HASH_BAD=target/release/wgal-watchdog
+check "a failing hash in a build: refused" test "$code" -ne 0
+check "a failing hash in a build: nothing packed" nothing_packed
+run
+record "$head"
+run "PATH=$work/hashbin:$work/bin:$PATH" FAKE_HASH_BAD=target/release/wgal-watchdog --no-build
+check "a failing hash with --no-build: refused" refused_with "the programs could not be hashed"
+check "a failing hash with --no-build: nothing packed" nothing_packed
+
+# A repository folder whose name ends with a newline, beside one without:
+# refused before anything is deleted, in either.
+twin="$work/twin"
+nl_repo="$twin"$'\n'
+mkdir -p "$twin/dist" "$nl_repo/${script_rel%/*}"
+cp "$repo/$script_rel" "$nl_repo/$script_rel"
+printf '[workspace.package]\nversion = "9.8.7"\n' >"$twin/Cargo.toml"
+echo keep >"$twin/dist/$name.$archive_ext"
+code=0
+out=$(cd "$work" && env -u CARGO_HOME HOME="$home" PATH="$work/bin:$PATH" FAKE_LOG="$log" \
+    bash "$nl_repo/$script_rel" 2>&1) || code=$?
+check "a repository name ending with a newline: refused" refused_with "control character"
+check "a repository name ending with a newline: the other repository's release stays" test -f "$twin/dist/$name.$archive_ext"
 
 # The last step failing leaves nothing either.
 run "PATH=$work/hashbin:$work/bin:$PATH" FAKE_HASH_FAIL=1
