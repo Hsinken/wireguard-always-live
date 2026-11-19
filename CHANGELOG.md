@@ -8,6 +8,17 @@ Each release archive carries a `RELEASE.txt` with the commit it was built
 from and the SHA-256 of every file in it. The Releases page gives the
 SHA-256 of each archive.
 
+## 4.2.2 (2026-11-20)
+
+- **Released for**: macOS only, to the owner's Mac for testing; not on the
+  Releases page. Windows and Ubuntu did not change and stay at 4.2.1.
+- **Fixed on macOS**: on macOS 27.2.1 the watchdog could not list the
+  tunnels (`manager_query_failed`). That macOS writes the service type in
+  `scutil --nc list` as `[VPN:com.wireguard.macos]`, with a colon; the
+  parser accepted only `[VPN/com.wireguard.macos]`, and one line it could
+  not read rejected the whole list. Both are read now.
+- Every compatibility minimum stays 4.2.1.
+
 ## 4.2.1 (2026-11-19)
 
 The first public version. Earlier versions were developed before the source

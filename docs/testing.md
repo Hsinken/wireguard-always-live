@@ -183,8 +183,12 @@ On the developer's computer:
 
 - **PASS**: a native build and every test on a Mac (macOS 27, Apple
   silicon), and installing, upgrading (with a failure injected on purpose)
-  and removing a 2.2.1 test build. For 4.2.1, the app bundle was built and
-  its version checked.
+  and removing a 2.2.1 test build.
+- **Found on a device**: 4.2.1, installed on that Mac (macOS 27.2.1), could
+  not list the tunnels: that macOS writes the service type with a colon
+  (`[VPN:com.wireguard.macos]`), and the parser accepted only a slash. Fixed
+  in 4.2.2; the fixtures `nc_list_macos27.txt` and `nc_status_macos27.txt`
+  copy the real layout and structure with invented values.
 - **Not proven**: anything that controls or probes the official app's VPN.
 
 ### The on-device checks by number
@@ -213,7 +217,7 @@ where it stands.
 | U5 | Ubuntu: controlling one tunnel leaves the others alone | NOT RUN (one tunnel only) |
 | U6 | Ubuntu: the ownership checks at registration | PASS (indirect inside `/etc/wireguard`) |
 | U7 | Ubuntu: discovery tells `wg-quick` tunnels from other managers | PASS |
-| M1 | macOS: `scutil --nc list` and `status` match the parser | BLOCKED (no authorized on-device run on a Mac yet) |
+| M1 | macOS: `scutil --nc list` and `status` match the parser | List: its format was read on macOS 27.2.1 (it writes a colon in the type) and the parser fixed in 4.2.2; discovery through the installed watchdog not yet run. Status: a de-identified copy of the real output parses (simulation); through the watchdog BLOCKED (needs a registered tunnel) |
 | M2 | macOS: the interface is found from the configuration each time; the connection count tells reconnects apart | BLOCKED (no authorized on-device run on a Mac yet) |
 | M3 | macOS: `ping -b` is bound to the interface | BLOCKED (no authorized on-device run on a Mac yet) |
 | M4 | macOS: routes, state and probes during a stop, with timestamps | BLOCKED (no authorized on-device run on a Mac yet) |

@@ -364,7 +364,7 @@ As of 2026-11-19.
 | Windows 11 | The window 2.2.1 and the watchdog 2.3.1, from before the versions were unified, are in use on real tunnels on the developer's computer. 4.2.1 is not released for Windows yet |
 | Ubuntu without a desktop (`--no-window`) | 4.2.1 is installed on a test server. That build was made before the source moved to this repository. See the table below |
 | Ubuntu with a desktop | 2.2.1 was installed on a test computer with a desktop (GNOME). 4.2.1 is not installed on a desktop yet. The server's results do not stand for it |
-| macOS | A native build passes all tests on a Mac (macOS 27, Apple silicon). A 2.2.1 test build was installed, upgraded with a failure injected on purpose, and removed there. For 4.2.1, only the app bundle was built and its version checked. Controlling the official app's VPN is not tested yet |
+| macOS | A native build passes all tests on a Mac (macOS 27, Apple silicon). A 2.2.1 test build was installed, upgraded with a failure injected on purpose, and removed there. 4.2.1 was installed on that Mac and could not list the tunnels: macOS 27.2.1 writes the service type with a colon, which its parser refused. 4.2.2 (macOS only) reads it; it is built, not yet installed. Controlling the official app's VPN is not tested yet |
 
 On the Ubuntu test server, with 4.2.1:
 
