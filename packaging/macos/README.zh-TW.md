@@ -7,7 +7,7 @@
 > **狀態（2026-11-20）**：
 > - 2026-11-13 第一次在一台 Mac（Apple 晶片，macOS 27.2.1）上原生建置與測試：五個命令通過，腳本的替身測試也以 macOS 內建的 bash 3.2 執行並通過。
 > - 同一天以一個測試用的建置（介面 2.2.1、WatchDog 2.3.1 的版本號）在那台 Mac 上實機安裝、升級（其中一次在停止 WatchDog 之後注入失敗）與 `uninstall.sh --remove-data`：PASS。這不是「已在裝置上驗收」。
-> - 4.2.1 從這個 repo 建置，安裝在那台 Mac 上。它的 WatchDog 列不出隧道（`manager_query_failed`）：macOS 27.2.1 把服務類型寫成 `[VPN:com.wireguard.macos]`，用冒號，而解析器只接受斜線。4.2.2 兩種都能讀。清單與 status 的格式是在那台 Mac 上唯讀讀取的，沒有改任何東西；status 原本就能解析。
+> - 4.2.1 從這個 repo 建置，安裝在那台 Mac 上。它的 WatchDog 列不出隧道（`manager_query_failed`）：macOS 27.2.1 把服務類型寫成 `[VPN:com.wireguard.macos]`，用冒號，而解析器只接受斜線。4.2.2 兩種都能讀。清單與 status 的格式是在那台 Mac 上唯讀讀取的，沒有改任何東西；真實 status 的去識別化副本原本就能解析（這是模擬，不是 Mac 上的 WatchDog）。
 > - 以下兩件事必須在實機上以 LaunchAgent 身分驗證，不能只在「終端機」裡試過就算數，還沒有做（NOT RUN）：
 >   - `scutil --nc` 的連線、斷線；
 >   - 鎖定螢幕後讀取鑰匙圈。
