@@ -152,10 +152,12 @@ plain_names() { # version arch
 }
 
 # The exported variables that would add compiler flags or move Cargo's
-# output, as themselves or as Cargo's own configuration keys. Prints each.
+# output, as themselves or as Cargo's own configuration keys. Prints each;
+# fails when the variables cannot be listed.
 refused_variables() {
-    local name
-    for name in $(compgen -e); do
+    local names name
+    names=$(compgen -e) || return 1
+    for name in $names; do
         case "$name" in
         RUSTFLAGS | CARGO_ENCODED_RUSTFLAGS | CARGO_BUILD_RUSTFLAGS | CARGO_TARGET_*_RUSTFLAGS | \
             CARGO_TARGET_DIR | CARGO_BUILD_TARGET_DIR | CARGO_BUILD_TARGET)
@@ -250,8 +252,12 @@ config_place() { # file root cargo_home
 # succeeds when there is one; fails when there is none. Cargo runs in the
 # repository and, for the window, in apps/desktop/src-tauri.
 environment_refusals() { # root cargo_home
-    local root=$1 home=$2 found=1 name file why configs
-    for name in $(refused_variables); do
+    local root=$1 home=$2 found=1 name names file why configs
+    if ! names=$(refused_variables); then
+        echo "the environment's variables could not be listed"
+        return 0
+    fi
+    for name in $names; do
         echo "$name is set; a release is built with its own compiler flags and output folder only"
         found=0
     done

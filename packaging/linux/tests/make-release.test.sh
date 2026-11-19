@@ -159,6 +159,9 @@ check "a refused configuration above the repository" test \
 # shellcheck disable=SC2317 # called by environment_refusals in the subshell
 check "configuration files that cannot be listed are refused" test \
     "$(cargo_configs() { return 1; }; environment_refusals "$crepo" "$chome")" = "the Cargo configuration files could not be listed"
+# shellcheck disable=SC2317 # called by refused_variables in the subshell
+check "variables that cannot be listed, after printing them, are refused" test \
+    "$(compgen() { builtin compgen "$@"; return 1; }; environment_refusals "$crepo" "$chome")" = "the environment's variables could not be listed"
 # shellcheck disable=SC2317 # called by cargo_configs in the subshell
 check "a dirname that fails, after printing the right folder, fails the listing" test \
     "$(dirname() { command dirname "$@"; return 1; }; environment_refusals "$crepo" "$chome")" = "the Cargo configuration files could not be listed"
