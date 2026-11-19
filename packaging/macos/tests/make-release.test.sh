@@ -167,6 +167,9 @@ check "a refused configuration above the repository" test \
 # shellcheck disable=SC2317 # called by environment_refusals in the subshell
 check "configuration files that cannot be listed are refused" test \
     "$(cargo_configs() { return 1; }; environment_refusals "$crepo" "$chome")" = "the Cargo configuration files could not be listed"
+# shellcheck disable=SC2317 # called by cargo_configs in the subshell
+check "a dirname that fails, after printing the right folder, fails the listing" test \
+    "$(dirname() { command dirname "$@"; return 1; }; environment_refusals "$crepo" "$chome")" = "the Cargo configuration files could not be listed"
 check "a refused variable is named" test "$(export CARGO_TARGET_DIR=/x; environment_refusals "$crepo" "$chome")" = \
     "CARGO_TARGET_DIR is set; a release is built with its own compiler flags and output folder only"
 
@@ -323,6 +326,35 @@ check "members: a folder that is not the release's is refused" not in_members "r
 rel/sub/b
 other/"
 check "members: a missing file is refused" not in_members "rel/a"
+check "members: a / entry is refused" not in_members "rel/a
+rel/sub/b
+/"
+check "members: / twice is refused" not in_members "/
+/
+rel/a
+rel/sub/b"
+check "members: an empty name is refused" not in_members "rel/a
+
+rel/sub/b"
+check "members: an empty part is refused" not in_members "rel/a
+rel/sub//b"
+check "members: a . part is refused" not in_members "rel/./a
+rel/sub/b"
+check "members: a .. part is refused" not in_members "rel/a
+rel/sub/../sub/b"
+check "members: a name starting with ./ is refused" not in_members "./rel/a
+./rel/sub/b"
+check "members: no members at all is refused" not in_members ""
+# shellcheck disable=SC2317 # called by members_match in the subshell
+members_with_failing_sort() { (sort() { command sort "$@"; return 1; }; in_members "$1"); }
+check "members: a sort that fails, after printing the right lines, is refused" not members_with_failing_sort "rel/a
+rel/sub/b"
+# shellcheck disable=SC2317 # called by members_match in the subshell
+members_with_failing_dedup() { (sort() { command sort "$@" || return 1; [ "${1:-}" != -u ]; }; in_members "$1"); }
+check "members: a de-duplication that fails, after printing the right lines, is refused" not members_with_failing_dedup "rel/
+rel/a
+rel/sub/
+rel/sub/b"
 
 release_like "$work/rel"
 mkdir -p "$work/lists"

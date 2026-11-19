@@ -193,7 +193,7 @@ cargo_configs() { # cargo_home folder...
                     fi
                 done
                 [ "$dir" = / ] && break
-                dir=$(dirname -- "$dir")
+                dir=$(dirname -- "$dir") || return 1
             done
         done
         for file in "$home/config.toml" "$home/config"; do
@@ -396,16 +396,28 @@ scan_release() { # folder forbidden scratch
 
 # Whether the archive's member names (one per line, a folder's with a final
 # /) are exactly the files under the release's folder, and none but its
-# folders: nothing beside it or outside it, and no name twice. Run in the
-# folder that holds the release's folder.
+# folders: every name inside the release's folder (none empty, none
+# absolute, none with an empty, . or .. part), and no name twice. Run in
+# the folder that holds the release's folder.
 members_match() { # listing name
-    local files dirs want_files want_dirs extra
+    local line part files dirs unique want_files want_dirs extra
+    while IFS= read -r line; do
+        case "$line" in
+        "$2"/ | "$2"/*) ;;
+        *) return 1 ;;
+        esac
+        part=${line%/}
+        case "/$part/" in
+        */./* | */../* | *//*) return 1 ;;
+        esac
+    done <<<"$1"
     files=$(awk '!/\/$/' <<<"$1" | LC_ALL=C sort) || return 1
     dirs=$(awk '/\/$/ { sub(/\/$/, ""); print }' <<<"$1" | LC_ALL=C sort) || return 1
+    unique=$(LC_ALL=C sort -u <<<"$dirs") || return 1
     want_files=$(find "$2" -type f -print | LC_ALL=C sort) || return 1
     want_dirs=$(find "$2" -type d -print | LC_ALL=C sort) || return 1
     [ "$files" = "$want_files" ] || return 1
-    [ "$(LC_ALL=C sort -u <<<"$dirs")" = "$dirs" ] || return 1
+    [ "$unique" = "$dirs" ] || return 1
     extra=$(LC_ALL=C comm -23 <(printf '%s\n' "$dirs") <(printf '%s\n' "$want_dirs")) || return 1
     [ -z "$extra" ]
 }
