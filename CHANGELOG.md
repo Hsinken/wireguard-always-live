@@ -10,8 +10,8 @@ SHA-256 of each archive.
 
 ## 4.2.2 (2026-11-20)
 
-- **Released for**: macOS only, to the owner's Mac for testing; not on the
-  Releases page. Windows and Ubuntu did not change and stay at 4.2.1.
+- **Released for**: macOS only, built for the owner's Mac to test; not on
+  the Releases page. Windows and Ubuntu did not change and stay at 4.2.1.
 - **Fixed on macOS**: on macOS 27.2.1 the watchdog could not list the
   tunnels (`manager_query_failed`). That macOS writes the service type in
   `scutil --nc list` as `[VPN:com.wireguard.macos]`, with a colon; the
