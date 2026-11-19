@@ -20,14 +20,20 @@ it installs nothing. The zip is not code-signed (owner decision of
 
 The programs must not name the computer that built them (4.3.0):
 
+- First it deletes this version's same-name release folder and zip in
+  dist\, once the version is a plain name and neither dist\ nor they are a
+  link or a junction (a folder is deleted without following one inside);
+  whatever stops it later removes what it made, so a failed run leaves
+  neither.
 - It builds only in the expected environment. It refuses, building
   nothing, when compiler flags or Cargo's output folder are set from
   outside: the variables RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS,
   CARGO_BUILD_RUSTFLAGS, CARGO_TARGET_<triple>_RUSTFLAGS,
   CARGO_TARGET_DIR, CARGO_BUILD_TARGET_DIR or CARGO_BUILD_TARGET, or a
   Cargo configuration file (.cargo\config.toml or .cargo\config in a folder
-  cargo runs in or any folder above it, or in Cargo's home) that mentions
-  rustflags or target-dir or has a key named target.
+  cargo runs in or any folder above it, or config.toml or config in Cargo's
+  home) that mentions rustflags or target-dir, has a key named target, or
+  has an escape (\u, \U or \x) that could spell a key.
 - It takes Cargo's home (CARGO_HOME, relative to where the script was
   started, or %USERPROFILE%\.cargo), the repository and the user's profile
   folder as absolute paths, and refuses when any part of them is a link or
@@ -37,8 +43,9 @@ The programs must not name the computer that built them (4.3.0):
   (CARGO_ENCODED_RUSTFLAGS, --remap-path-prefix). Both variables are put
   back as they were when it ends, built or not.
 - The window is built with --locked too ('--' quoted, or Windows
-  PowerShell drops it before pnpm), and the checkout must be unchanged
-  after the builds (Cargo.lock included).
+  PowerShell drops it before pnpm), and git must report the same checkout
+  after the builds as before (Cargo.lock and untracked files included);
+  every git call must succeed.
 - Before zipping, every file of the release, RELEASE.txt included, is
   searched for the three folders' paths, as UTF-8 and as UTF-16LE, with
   ASCII letters in either case, either separator (\ or /), and every
@@ -46,9 +53,9 @@ The programs must not name the computer that built them (4.3.0):
   whose short name cannot be read stops it. A hit, a link or junction, or
   any error zips nothing; the message names the file inside the release,
   which folder and which encoding, never the path itself.
-- The same-name folder and zip in dist\ are deleted first; the release is
-  assembled in a temporary folder and its zip moved into place only when
-  everything passed, so a failed run leaves neither.
+- The release is assembled in a temporary folder and its zip moved into
+  place last. When it stops, it prints only a message of its own, which
+  names no folder; any other error is named by its kind only.
 
 A build writes target\release\wgal-build.txt beside the programs: the
 commit, the version and each program's SHA-256.
@@ -114,11 +121,54 @@ function Test-BuildRecord([string] $Record, [string[]] $Expected) {
     return $null
 }
 
+# Stops with a message of this script's own, which names no folder but
+# files inside the release or the repository; Get-SafeMessage tells it
+# from any other error, whose message may name a folder.
+function Stop-Safe([string] $Message) {
+    $exception = New-Object System.Exception $Message
+    $exception.Data['wgal-make-release'] = $true
+    throw $exception
+}
+
+function Get-SafeMessage([Management.Automation.ErrorRecord] $ErrorRecord, [string] $Otherwise) {
+    if ($ErrorRecord.Exception.Data.Contains('wgal-make-release')) {
+        return $ErrorRecord.Exception.Message
+    }
+    return $Otherwise
+}
+
 function Invoke-Checked([string] $What, [scriptblock] $Command) {
     Write-Host "== $What"
     & $Command
     if ($LASTEXITCODE -ne 0) {
-        throw "$What failed (exit $LASTEXITCODE)."
+        Stop-Safe "make-release.ps1: $What failed (exit $LASTEXITCODE)."
+    }
+}
+
+# Runs git with the arguments and returns its output; stops when it fails.
+# Its own messages, which may name folders, are not shown.
+function Invoke-Git {
+    $ErrorActionPreference = 'Continue'
+    $output = & git @args 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Safe 'make-release.ps1: git could not read the checkout'
+    }
+    return $output
+}
+
+# What git says about the checkout, every change and untracked file included.
+function Get-CheckoutState {
+    return (@(Invoke-Git -c core.quotepath=true status --porcelain=v1 --untracked-files=all) -join "`n")
+}
+
+# Deletes a file or a folder this run made or replaces; a folder with
+# everything in it, removing a link or junction inside as a link, never
+# what it points to.
+function Remove-Made([string] $Path) {
+    if (Test-Path -LiteralPath $Path -PathType Container) {
+        [IO.Directory]::Delete($Path, $true)
+    } elseif (Test-Path -LiteralPath $Path) {
+        [IO.File]::Delete($Path)
     }
 }
 
@@ -163,9 +213,9 @@ function Get-CargoConfigs([string] $CargoHome, [string[]] $Folders) {
 
 # What a configuration file has that a release build refuses, whatever its
 # TOML spelling: any mention of rustflags or target-dir (in a comment too),
-# or a key named target (build.target moves the output to
-# target\<triple>\). $null when it has none; a file that cannot be read is
-# refused.
+# an escape that could spell a key, or a key named target (build.target
+# moves the output to target\<triple>\). $null when it has none; a file that
+# cannot be read is refused.
 function Get-ConfigRefusal([string] $File) {
     if (-not (Test-Path -LiteralPath $File -PathType Leaf)) {
         return 'it is not a readable file'
@@ -179,6 +229,11 @@ function Get-ConfigRefusal([string] $File) {
         if ($text.Contains($key)) {
             return $key
         }
+    }
+    # \u, \U or \x after an even number of backslashes; in a literal string
+    # too, which is refused rather than told apart.
+    if ($text -cmatch '(^|[^\\])(\\\\)*\\[uUx]') {
+        return 'an escape (\u, \U or \x) that could spell a key'
     }
     if ($text -cmatch '(?m)(^|[^A-Za-z0-9_-])target["'']?[ \t]*=') {
         return 'a key named target'
@@ -218,26 +273,30 @@ function Get-EnvironmentRefusals([string] $Repository, [string] $CargoHome) {
 # The folder as an absolute path, a relative one taken from $From. Throws
 # unless it exists and no part of it is a link or a junction.
 function Resolve-RealFolder([string] $From, [string] $Path) {
-    if (-not [IO.Path]::IsPathRooted($Path)) {
-        $Path = Join-Path $From $Path
-    }
-    $full = [IO.Path]::GetFullPath($Path)
-    $root = [IO.Path]::GetPathRoot($full)
-    if ($full.Length -gt $root.Length) {
-        $full = $full.TrimEnd('\')
-    }
-    if (-not (Test-Path -LiteralPath $full -PathType Container)) {
-        throw 'it does not exist'
-    }
-    $part = $full
-    while ($part -and $part.Length -gt $root.Length) {
-        $item = Get-Item -LiteralPath $part -Force
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-            throw 'a part of it is a link or a junction'
+    try {
+        if (-not [IO.Path]::IsPathRooted($Path)) {
+            $Path = Join-Path $From $Path
         }
-        $part = [IO.Path]::GetDirectoryName($part)
+        $full = [IO.Path]::GetFullPath($Path)
+        $root = [IO.Path]::GetPathRoot($full)
+        if ($full.Length -gt $root.Length) {
+            $full = $full.TrimEnd('\')
+        }
+        if (-not (Test-Path -LiteralPath $full -PathType Container)) {
+            Stop-Safe 'it does not exist'
+        }
+        $part = $full
+        while ($part -and $part.Length -gt $root.Length) {
+            $item = Get-Item -LiteralPath $part -Force
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                Stop-Safe 'a part of it is a link or a junction'
+            }
+            $part = [IO.Path]::GetDirectoryName($part)
+        }
+        return $full
+    } catch {
+        Stop-Safe (Get-SafeMessage $_ 'it could not be read')
     }
-    return $full
 }
 
 function Test-HasControl([string] $Text) {
@@ -259,7 +318,7 @@ function Get-FolderNames([string] $Folder) {
             return @($sub.Name, $sub.ShortName)
         }
     }
-    throw 'no short name'
+    Stop-Safe 'no short name'
 }
 
 # Every spelling of the absolute path that writes each of its parts in its
@@ -316,11 +375,20 @@ function Get-ReleaseFiles([string] $Folder) {
     $queue.Enqueue($Folder)
     while ($queue.Count -gt 0) {
         $dir = $queue.Dequeue()
-        foreach ($entry in [IO.Directory]::GetFileSystemEntries($dir)) {
-            $attributes = [IO.File]::GetAttributes($entry)
+        try {
+            $entries = [IO.Directory]::GetFileSystemEntries($dir)
+        } catch {
+            Stop-Safe 'a folder of the release could not be listed'
+        }
+        foreach ($entry in $entries) {
             $relative = $entry.Substring($Folder.Length + 1)
+            try {
+                $attributes = [IO.File]::GetAttributes($entry)
+            } catch {
+                Stop-Safe "$relative could not be inspected"
+            }
             if ($attributes -band [IO.FileAttributes]::ReparsePoint) {
-                throw "$relative is a link or a junction; a release holds only files and folders"
+                Stop-Safe "$relative is a link or a junction; a release holds only files and folders"
             }
             if ($attributes -band [IO.FileAttributes]::Directory) {
                 $queue.Enqueue($entry)
@@ -339,13 +407,13 @@ function Get-ReleaseFiles([string] $Folder) {
 # error, with a message that names no path but the file inside the folder.
 function Find-BuildPaths([string] $Folder, [object[]] $Forbidden) {
     if (-not $Forbidden -or $Forbidden.Count -eq 0) {
-        throw 'no forbidden paths were given'
+        Stop-Safe 'no forbidden paths were given'
     }
     $searches = @()
     foreach ($item in $Forbidden) {
         $spellings = @($item.Spellings)
         if ($spellings.Count -eq 0 -or @($spellings | Where-Object { $_.Length -lt 3 }).Count -gt 0) {
-            throw 'a forbidden path is malformed'
+            Stop-Safe 'a forbidden path is malformed'
         }
         foreach ($encoding in @('UTF-8', 'UTF-16LE')) {
             $alternatives = @($spellings | ForEach-Object { Get-PathPattern $_ ($encoding -eq 'UTF-16LE') })
@@ -364,7 +432,7 @@ function Find-BuildPaths([string] $Folder, [object[]] $Forbidden) {
         try {
             $text = $latin1.GetString([IO.File]::ReadAllBytes((Join-Path $folderPath $relative)))
         } catch {
-            throw "cannot read $relative"
+            Stop-Safe "cannot read $relative"
         }
         foreach ($search in $searches) {
             $count = $search.Regex.Matches($text).Count
@@ -382,81 +450,96 @@ function Find-BuildPaths([string] $Folder, [object[]] $Forbidden) {
 
 function Invoke-Main {
 $invoked = (Get-Location).ProviderPath
-$refuse = { param($why) throw "make-release.ps1: $why" }
-if (-not $env:USERPROFILE) { & $refuse 'USERPROFILE is not set' }
+# The release's name, from the version as written, before anything else.
 try {
-    $repository = Resolve-RealFolder $invoked $Root
+    $workspace = [IO.File]::ReadAllText((Join-Path $Root 'Cargo.toml'))
 } catch {
-    & $refuse "the repository's folder cannot be used: $($_.Exception.Message)"
+    Stop-Safe 'make-release.ps1: Cargo.toml could not be read'
 }
-try {
-    $profileFolder = Resolve-RealFolder $invoked $env:USERPROFILE
-} catch {
-    & $refuse "the profile folder (USERPROFILE) cannot be used: $($_.Exception.Message)"
+if ($workspace -notmatch '(?ms)^\[workspace\.package\].*?^version\s*=\s*"([^"]+)"') {
+    Stop-Safe 'make-release.ps1: the version is not in Cargo.toml'
 }
-$cargoGiven = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
-try {
-    $cargoHome = Resolve-RealFolder $invoked $cargoGiven
-} catch {
-    & $refuse "Cargo's home folder (CARGO_HOME, or %USERPROFILE%\.cargo) cannot be used: $($_.Exception.Message)"
+$version = $Matches[1]
+if ($version -notmatch '^\d+\.\d+\.\d+$') {
+    Stop-Safe 'make-release.ps1: the version is not a plain name; nothing was deleted or built'
 }
-foreach ($path in @($repository, $profileFolder, $cargoHome)) {
-    if (Test-HasControl $path) {
-        & $refuse "a folder's path has a control character; it cannot be written out of the programs"
+$name = "wgal-$version-windows-x64"
+$dist = Join-Path $Root 'dist'
+$stage = Join-Path $dist $name
+$zip = Join-Path $dist "$name.zip"
+foreach ($place in @($dist, $stage, $zip)) {
+    if ((Test-Path -LiteralPath $place) -and ((Get-Item -LiteralPath $place -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        Stop-Safe 'make-release.ps1: dist\ or the release in it is a link or a junction; nothing was deleted or built'
     }
 }
-try {
-    $forbidden = @(
-        [pscustomobject]@{ Label = 'profile folder'; Spellings = @(Get-PathSpellings $profileFolder) },
-        [pscustomobject]@{ Label = 'Cargo home'; Spellings = @(Get-PathSpellings $cargoHome) },
-        [pscustomobject]@{ Label = 'repository'; Spellings = @(Get-PathSpellings $repository) }
-    )
-} catch {
-    & $refuse 'the 8.3 short names of the folders could not be read; nothing was built'
+if ((Test-Path -LiteralPath $dist) -and -not (Test-Path -LiteralPath $dist -PathType Container)) {
+    Stop-Safe 'make-release.ps1: dist\ is not a folder; nothing was deleted or built'
 }
+Remove-Made $stage
+Remove-Made $zip
 
-Push-Location $repository
 $saved = @{}
-$name = $null
 $work = $null
-$stage = $null
-$zip = $null
+$pushed = $false
 $finished = $false
 try {
-    # git prints the top folder in the console's code page here, so ask
-    # for the way up from here instead: none when this is the top.
-    if ((git rev-parse --show-cdup | Out-String).Trim()) {
-        & $refuse 'the script is not in the repository it runs in'
+    if (-not $env:USERPROFILE) { Stop-Safe 'make-release.ps1: USERPROFILE is not set' }
+    try {
+        $repository = Resolve-RealFolder $invoked $Root
+    } catch {
+        Stop-Safe "make-release.ps1: the repository's folder cannot be used: $(Get-SafeMessage $_ 'it could not be read')"
     }
-    $dirty = git status --porcelain --untracked-files=no
-    if ($dirty) {
-        throw 'The checkout has uncommitted changes; a release is built from a commit.'
+    try {
+        $profileFolder = Resolve-RealFolder $invoked $env:USERPROFILE
+    } catch {
+        Stop-Safe "make-release.ps1: the profile folder (USERPROFILE) cannot be used: $(Get-SafeMessage $_ 'it could not be read')"
     }
-    $commit = (git rev-parse HEAD).Trim()
-    $workspace = Get-Content -Raw -Encoding UTF8 'Cargo.toml'
-    if ($workspace -notmatch '(?ms)^\[workspace\.package\].*?^version\s*=\s*"([^"]+)"') {
-        throw 'The version is not in Cargo.toml.'
+    $cargoGiven = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
+    try {
+        $cargoHome = Resolve-RealFolder $invoked $cargoGiven
+    } catch {
+        Stop-Safe "make-release.ps1: Cargo's home folder (CARGO_HOME, or %USERPROFILE%\.cargo) cannot be used: $(Get-SafeMessage $_ 'it could not be read')"
     }
-    $version = $Matches[1]
+    foreach ($path in @($repository, $profileFolder, $cargoHome)) {
+        if (Test-HasControl $path) {
+            Stop-Safe "make-release.ps1: a folder's path has a control character; it cannot be written out of the programs"
+        }
+    }
+    try {
+        $forbidden = @(
+            [pscustomobject]@{ Label = 'profile folder'; Spellings = @(Get-PathSpellings $profileFolder) },
+            [pscustomobject]@{ Label = 'Cargo home'; Spellings = @(Get-PathSpellings $cargoHome) },
+            [pscustomobject]@{ Label = 'repository'; Spellings = @(Get-PathSpellings $repository) }
+        )
+    } catch {
+        Stop-Safe 'make-release.ps1: the 8.3 short names of the folders could not be read; nothing was built'
+    }
 
-    $name = "wgal-$version-windows-x64"
-    $dist = Join-Path $repository 'dist'
-    $stage = Join-Path $dist $name
-    $zip = Join-Path $dist "$name.zip"
-    if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
-    if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+    Push-Location $repository
+    $pushed = $true
+    # git prints the top folder in the console's code page here, so ask for
+    # the way up from here instead: none when this is the top.
+    if ((@(Invoke-Git rev-parse --show-cdup) -join '').Trim()) {
+        Stop-Safe 'make-release.ps1: the script is not in the repository it runs in'
+    }
+    $before = Get-CheckoutState
+    $tracked = @($before -split "`n" | Where-Object { $_ -and -not $_.StartsWith('?? ') })
+    if ($tracked.Count -gt 0) {
+        Stop-Safe 'make-release.ps1: the checkout has uncommitted changes; a release is built from a commit.'
+    }
+    $commit = (@(Invoke-Git rev-parse HEAD) -join '').Trim()
 
     $built = Join-Path $repository 'target\release'
     $record = Join-Path $repository $RecordFile
     if ($NoBuild) {
         $why = Test-BuildRecord $record (Get-BuildRecord $built $commit $version $Programs)
         if ($null -ne $why) {
-            throw "-NoBuild: $why. Nothing was packed."
+            Stop-Safe "make-release.ps1: -NoBuild: $why. Nothing was packed."
         }
     } else {
         $why = @(Get-EnvironmentRefusals $repository $cargoHome)
         if ($why.Count -gt 0) {
-            & $refuse (($why -join "`n") + "`nNothing was built.")
+            Stop-Safe ((@($why | ForEach-Object { "make-release.ps1: $_" }) + 'make-release.ps1: nothing was built') -join "`n")
         }
         foreach ($variable in @('CARGO_HOME', 'CARGO_ENCODED_RUSTFLAGS')) {
             $saved[$variable] = [Environment]::GetEnvironmentVariable($variable, 'Process')
@@ -467,24 +550,30 @@ try {
         Invoke-Checked 'wgal-mcp' { cargo build --release --locked -p wgal-mcp }
         Invoke-Checked 'wgal' { cargo build --release --locked -p wgal-cli }
         Invoke-Checked 'wgal-desktop' { pnpm --filter '@wgal/desktop' run tauri build --no-bundle '--' --locked }
-        if ((git status --porcelain --untracked-files=no) -or ((git rev-parse HEAD).Trim() -ne $commit)) {
-            & $refuse 'the build changed the checkout (Cargo.lock?); nothing was packed'
+        $after = Get-CheckoutState
+        $now = (@(Invoke-Git rev-parse HEAD) -join '').Trim()
+        if ($after -cne $before -or $now -ne $commit) {
+            Stop-Safe 'make-release.ps1: the build changed the checkout (Cargo.lock, or a new file?); nothing was packed'
         }
         Write-BuildRecord $record (Get-BuildRecord $built $commit $version $Programs)
     }
 
+    # What goes in, each checked first so a missing one is named.
+    $sources = @()
+    foreach ($file in $Programs) { $sources += , @("target\release\$file", (Join-Path $built $file)) }
+    foreach ($file in $Scripts + $Readmes) { $sources += , @("packaging\windows\$file", (Join-Path $repository "packaging\windows\$file")) }
+    foreach ($file in $Guides) { $sources += , @("packaging\$file", (Join-Path $repository "packaging\$file")) }
+    foreach ($source in $sources) {
+        if (-not (Test-Path -LiteralPath $source[1] -PathType Leaf)) {
+            Stop-Safe "make-release.ps1: $($source[0]) is missing; nothing was packed"
+        }
+    }
     New-Item -ItemType Directory -Force $dist | Out-Null
     $work = Join-Path $dist (".$name." + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $temp = Join-Path $work $name
     New-Item -ItemType Directory $temp | Out-Null
-    foreach ($file in $Programs) {
-        Copy-Item -LiteralPath (Join-Path $built $file) $temp
-    }
-    foreach ($file in $Scripts + $Readmes) {
-        Copy-Item -LiteralPath (Join-Path $repository "packaging\windows\$file") $temp
-    }
-    foreach ($file in $Guides) {
-        Copy-Item -LiteralPath (Join-Path $repository "packaging\$file") $temp
+    foreach ($source in $sources) {
+        Copy-Item -LiteralPath $source[1] $temp
     }
 
     $lines = @(
@@ -504,32 +593,38 @@ try {
     try {
         $hits = Find-BuildPaths $temp $forbidden
     } catch {
-        & $refuse "the release could not be checked ($($_.Exception.Message)); nothing was packed"
+        Stop-Safe "make-release.ps1: the release could not be checked ($(Get-SafeMessage $_ 'an error')); nothing was packed"
     }
     if ($hits -gt 0) {
-        & $refuse "the release names the computer that built it ($hits places); nothing was packed"
+        Stop-Safe "make-release.ps1: the release names the computer that built it ($hits places); nothing was packed"
     }
 
     Compress-Archive -Path $temp -DestinationPath (Join-Path $work "$name.zip")
     Move-Item -LiteralPath $temp -Destination $stage
     Move-Item -LiteralPath (Join-Path $work "$name.zip") -Destination $zip
-    $finished = $true
-    Remove-Item -LiteralPath $work -Recurse -Force
+    Remove-Made $work
     $zipHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLower()
     Write-Host "Built $zip"
     Write-Host "SHA-256 $zipHash"
+    $finished = $true
 } finally {
     foreach ($variable in @($saved.Keys)) {
         [Environment]::SetEnvironmentVariable($variable, $saved[$variable], 'Process')
     }
     if (-not $finished) {
         foreach ($leftover in @($work, $stage, $zip)) {
-            if ($leftover -and (Test-Path -LiteralPath $leftover)) {
-                Remove-Item -LiteralPath $leftover -Recurse -Force
+            if ($leftover) {
+                try {
+                    Remove-Made $leftover
+                } catch {
+                    Write-Host 'make-release.ps1: a leftover of this run in dist\ could not be removed'
+                }
             }
         }
     }
-    Pop-Location
+    if ($pushed) {
+        Pop-Location
+    }
 }
 }
 
@@ -540,7 +635,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     try {
         Invoke-Main
     } catch {
-        [Console]::Error.WriteLine($_.Exception.Message)
+        [Console]::Error.WriteLine((Get-SafeMessage $_ "make-release.ps1: stopped by an unexpected error ($($_.Exception.GetType().Name)); nothing was packed"))
         exit 1
     }
 }

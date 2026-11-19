@@ -115,6 +115,12 @@ try {
     Check 'a dotted build.target is refused' ((& $refusal 'build.target="x86_64-pc-windows-gnu"') -eq 'a key named target')
     Check 'an inline build.target is refused' ((& $refusal 'build = { target = "x" }') -eq 'a key named target')
     Check 'a quoted target key is refused' ((& $refusal '[build]', '"target" = "x"') -eq 'a key named target')
+    $escape = 'an escape (\u, \U or \x) that could spell a key'
+    Check 'a \u escape that could spell a key is refused' ((& $refusal '[build]', '"target\u002ddir" = "elsewhere"') -eq $escape)
+    Check 'a \U escape is refused' ((& $refusal '"rust\U00000066lags" = []') -eq $escape)
+    Check 'a \x escape is refused' ((& $refusal '"target\x2ddir" = "x"') -eq $escape)
+    Check 'a backslash in a literal string before U is refused too' ((& $refusal "linker = 'C:\Users\cc'") -eq $escape)
+    Check 'escaped backslashes are not an escape' ($null -eq (& $refusal 'linker = "C:\\Users\\cc"'))
     Check 'linker settings are not refused' ($null -eq (& $refusal '[target.x86_64-pc-windows-msvc]', 'linker = "lld-link"',
             "[target.'cfg(target_os = `"windows`")']", 'runner = "x"', '[net]', 'retry = 3'))
     $asFolder = Join-Path $folder 'a-folder.toml'
@@ -160,6 +166,13 @@ try {
     Check 'a control character is found' (Test-HasControl "a$([char]0x1f)b")
     Check 'a newline is found' (Test-HasControl "a`nb")
     Check 'plain text has none' (-not (Test-HasControl "C:\a b\$a"))
+    $safe = try { Stop-Safe 'mine' } catch { Get-SafeMessage $_ 'other' }
+    $other = try { throw 'not mine' } catch { Get-SafeMessage $_ 'other' }
+    Check 'a message of its own is told from another error' ($safe -eq 'mine' -and $other -eq 'other')
+    $missing = try { Resolve-RealFolder $folder 'missing'; 'none' } catch { Get-SafeMessage $_ 'UNSAFE' }
+    Check 'a missing folder: a message of its own' ($missing -eq 'it does not exist')
+    $illegal = try { Resolve-RealFolder $folder 'bad<name>'; 'none' } catch { Get-SafeMessage $_ 'UNSAFE' }
+    Check "another error while resolving a folder becomes a message of its own" ($illegal -eq 'it could not be read')
 
     # Spellings: each part in its long or its 8.3 short name.
     $originalNames = ${function:Get-FolderNames}
@@ -285,6 +298,8 @@ try {
     } finally {
         $lock.Dispose()
     }
+    $gone = try { Find-BuildPaths (Join-Path $folder 'no such release') $forbidden; 'none' } catch { Get-SafeMessage $_ 'UNSAFE' }
+    Check 'a release folder that cannot be listed: a message of its own, with no path' ($gone -eq 'a folder of the release could not be listed')
     & $releaseLike
     Check 'no forbidden paths is refused' (& $threw { Find-BuildPaths $rel @() })
     Check 'a drive alone as a forbidden path is refused' (& $threw { Find-BuildPaths $rel @([pscustomobject]@{ Label = 'x'; Spellings = @('C:') }) })

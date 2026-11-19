@@ -91,6 +91,7 @@ $out = Join-Path (Get-Location).ProviderPath 'target\release'
 New-Item -ItemType Directory -Force $out | Out-Null
 [IO.File]::WriteAllBytes((Join-Path $out $program), (Get-FakeBytes $program))
 if ($env:FAKE_TOUCH) { [IO.File]::AppendAllText($env:FAKE_TOUCH, "# changed by the build`n") }
+if ($env:FAKE_NEWFILE) { [IO.File]::WriteAllText($env:FAKE_NEWFILE, "// made by the build`n") }
 exit 0
 '@)
 [IO.File]::WriteAllText((Join-Path $bin 'pnpm.ps1'), @'
@@ -100,6 +101,21 @@ $out = Join-Path (Get-Location).ProviderPath 'target\release'
 New-Item -ItemType Directory -Force $out | Out-Null
 [IO.File]::WriteAllBytes((Join-Path $out 'wgal-desktop.exe'), (Get-FakeBytes 'wgal-desktop.exe'))
 exit 0
+'@)
+
+# git that fails `git status` (FAKE_GIT_FAIL=status), or only once cargo
+# has run (FAKE_GIT_FAIL=after-build); otherwise the real one.
+$gitbin = Join-Path $top 'gitbin'
+New-Item -ItemType Directory $gitbin | Out-Null
+$realGit = (Get-Command git -CommandType Application | Select-Object -First 1).Source
+[IO.File]::WriteAllText((Join-Path $gitbin 'git.ps1'), @'
+$sub = if ($args.Count -gt 2 -and $args[0] -eq '-c') { $args[2] } else { $args[0] }
+if ($sub -eq 'status') {
+    if ($env:FAKE_GIT_FAIL -eq 'status') { exit 128 }
+    if ($env:FAKE_GIT_FAIL -eq 'after-build' -and (Select-String -LiteralPath $env:FAKE_LOG -Pattern '^cargo args' -Quiet)) { exit 128 }
+}
+& $env:FAKE_REAL_GIT @args
+exit $LASTEXITCODE
 '@)
 
 # Runs the script in its own Windows PowerShell with the scratch profile,
@@ -299,17 +315,65 @@ try {
         Check 'a relative CARGO_HOME: packed' ($r.Code -eq 0)
         Check 'a relative CARGO_HOME: taken from where the script started' ((& $timesLogged "cargo flags=$(& $flags (Join-Path $elsewhere 'cargo rel'))") -eq 3)
         Check 'a relative CARGO_HOME: cargo gets it absolute' ((& $timesLogged "cargo home=$(Join-Path $elsewhere 'cargo rel')") -eq 3)
+        Check 'before a refusal: the release is there' (Test-Path -LiteralPath $zip)
         $r = Invoke-Release @{ CARGO_HOME = (Join-Path $top 'missing') }
         Check 'a missing Cargo home: refused' ($r.Code -ne 0 -and $r.Out -like "*Cargo's home folder*")
         Check 'a missing Cargo home: nothing built' (& $nothingBuilt)
+        Check 'a missing Cargo home: the same-name release was deleted' (& $nothingPacked)
+        Check 'a missing Cargo home: the path is not printed' (& $noPath $r)
+
+        # dist\ as a junction is refused before anything is deleted.
+        $savedDist = Join-Path $top 'dist.saved'
+        Move-Item -LiteralPath $dist -Destination $savedDist
+        $outside = Join-Path $top 'outside'
+        New-Item -ItemType Directory (Join-Path $outside $name) | Out-Null
+        [IO.File]::WriteAllText((Join-Path $outside "$name\sentinel"), 'keep')
+        [IO.File]::WriteAllText((Join-Path $outside "$name.zip"), 'keep')
+        New-Item -ItemType Junction -Path $dist -Target $outside | Out-Null
+        $r = Invoke-Release
+        Check 'dist\ as a junction: refused' ($r.Code -ne 0 -and $r.Out -like '*link or a junction*')
+        Check 'dist\ as a junction: nothing built' (& $nothingBuilt)
+        Check 'dist\ as a junction: the folder it points to is untouched' ((Test-Path (Join-Path $outside "$name\sentinel")) -and (Test-Path (Join-Path $outside "$name.zip")))
+        Check 'dist\ as a junction: the path is not printed' (& $noPath $r)
+        [IO.Directory]::Delete($dist, $false)
+        Move-Item -LiteralPath $savedDist -Destination $dist
+
+        # A version that is not a plain name is refused before anything is deleted.
+        $cargoToml = Join-Path $work 'Cargo.toml'
+        $savedToml = [IO.File]::ReadAllText($cargoToml)
+        [IO.File]::WriteAllText($cargoToml, "[workspace.package]`nversion = `"9.8.7\..\..\x`"`n")
+        $r = Invoke-Release
+        Check 'a version that is not a plain name: refused' ($r.Code -ne 0 -and $r.Out -like '*not a plain name*')
+        Check 'a version that is not a plain name: nothing built' (& $nothingBuilt)
+        [IO.File]::WriteAllText($cargoToml, $savedToml)
+
+        # git failing is never taken for a clean checkout.
+        $r = Invoke-Release @{ PATH = "$gitbin;$bin;$basePath"; FAKE_REAL_GIT = $realGit; FAKE_GIT_FAIL = 'status' }
+        Check 'git status failing: refused' ($r.Code -ne 0 -and $r.Out -like '*git could not read the checkout*')
+        Check 'git status failing: nothing built' (& $nothingBuilt)
+        Check 'git status failing: nothing packed' (& $nothingPacked)
+        $r = Invoke-Release @{ PATH = "$gitbin;$bin;$basePath"; FAKE_REAL_GIT = $realGit; FAKE_GIT_FAIL = 'after-build' }
+        Check 'git status failing after the build: refused' ($r.Code -ne 0 -and $r.Out -like '*git could not read the checkout*')
+        Check 'git status failing after the build: nothing packed' (& $nothingPacked)
+
+        # A file the build adds to the checkout zips nothing.
+        $newFile = Join-Path $work 'made-by-the-build.rs'
+        $r = Invoke-Release @{ FAKE_NEWFILE = $newFile }
+        Check 'a new file from the build: refused' ($r.Code -ne 0 -and $r.Out -like '*the build changed the checkout*')
+        Check 'a new file from the build: nothing packed' (& $nothingPacked)
+        Remove-Item -LiteralPath $newFile
 
         # Links and junctions on the way are refused.
         $profileLink = Join-Path $top 'profile link'
         New-Item -ItemType Junction -Path $profileLink -Target $profileDir | Out-Null
         $junctions += $profileLink
+        $r = Invoke-Release
+        Check 'before the junction refusal: the release is there' ($r.Code -eq 0 -and (Test-Path -LiteralPath $zip))
         $r = Invoke-Release @{ USERPROFILE = $profileLink }
         Check 'a profile folder through a junction: refused' ($r.Code -ne 0 -and $r.Out -like '*link or a junction*')
         Check 'a profile folder through a junction: nothing built' (& $nothingBuilt)
+        Check 'a profile folder through a junction: the same-name release was deleted' (& $nothingPacked)
+        Check 'a profile folder through a junction: the path is not printed' (& $noPath $r)
         $r = Invoke-Release @{ CARGO_HOME = (Join-Path $profileLink '.cargo') }
         Check "Cargo's home through a junction: refused" ($r.Code -ne 0 -and $r.Out -like '*link or a junction*')
         $repoLink = Join-Path $top 'repo link'
@@ -418,6 +482,36 @@ try {
             }
         }
         Check 'in this process: the build passed and the refusal refused' (($outcomes -join ',') -eq 'False,True')
+
+        # The last step failing (the zip's hash) leaves nothing either.
+        $before = @{}
+        $set = @{ USERPROFILE = $profileDir; CARGO_HOME = $null; FAKE_LOG = $log; FAKE_EMBED = $null; PATH = "$bin;$basePath" }
+        foreach ($key in @($set.Keys)) {
+            $before[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
+            [Environment]::SetEnvironmentVariable($key, $set[$key], 'Process')
+        }
+        try {
+            $message = try {
+                & {
+                    . $script
+                    function Get-FileHash([string] $Algorithm, [string] $LiteralPath) {
+                        if ($LiteralPath.EndsWith('.zip')) { throw 'the hash failed' }
+                        Microsoft.PowerShell.Utility\Get-FileHash -Algorithm $Algorithm -LiteralPath $LiteralPath
+                    }
+                    Invoke-Main
+                } 6>&1 | Out-Null
+                'none'
+            } catch {
+                $_.Exception.Message
+            }
+            Check "the zip's hash failing: it stops" ($message -eq 'the hash failed')
+            Check "the zip's hash failing: nothing packed" (& $nothingPacked)
+            Check "the zip's hash failing: CARGO_ENCODED_RUSTFLAGS is as it was" ($null -eq [Environment]::GetEnvironmentVariable('CARGO_ENCODED_RUSTFLAGS', 'Process'))
+        } finally {
+            foreach ($key in @($before.Keys)) {
+                [Environment]::SetEnvironmentVariable($key, $before[$key], 'Process')
+            }
+        }
     } finally {
         Pop-Location
     }
