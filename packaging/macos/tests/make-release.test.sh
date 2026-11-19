@@ -16,12 +16,12 @@ source "$here/../make-release.sh"
 
 failures=0
 check() { # name, then the command that must succeed
-    local name=$1
+    local check_name=$1
     shift
     if "$@"; then
-        echo "PASS $name"
+        echo "PASS $check_name"
     else
-        echo "FAIL $name"
+        echo "FAIL $check_name"
         failures=$((failures + 1))
     fi
 }
@@ -119,6 +119,13 @@ check "build.target is refused" has_refusal "a key named target" '[build]' 'targ
 check "a dotted build.target is refused" has_refusal "a key named target" 'build.target="x86_64-apple-darwin"'
 check "an inline build.target is refused" has_refusal "a key named target" 'build = { target = "x" }'
 check "a quoted target key is refused" has_refusal "a key named target" '[build]' '"target" = "x"'
+check "a \\u escape that could spell a key is refused" has_refusal "an escape (\u, \U or \x) that could spell a key" \
+    '[build]' '"target\u002ddir" = "elsewhere"'
+check "a \\U escape is refused" has_refusal "an escape (\u, \U or \x) that could spell a key" '"rust\U00000066lags" = []'
+check "a \\x escape is refused" has_refusal "an escape (\u, \U or \x) that could spell a key" '"target\x2ddir" = "x"'
+check "a backslash in a literal string before U is refused too" has_refusal "an escape (\u, \U or \x) that could spell a key" \
+    "linker = 'C:\Users\cc'"
+check "escaped backslashes are not an escape" not_refused 'linker = "C:\\Users\\cc"'
 check "linker settings are not refused" not_refused '[target.aarch64-apple-darwin]' 'linker = "cc"' \
     "[target.'cfg(target_os = \"macos\")']" 'runner = "x"' '[net]' 'retry = 3'
 mkdir -p "$work/a-folder.toml"
@@ -145,6 +152,9 @@ check "a refused configuration in Cargo's home" test \
 check "a refused configuration above the repository" test \
     "$(refusals_name "$cfg/above/.cargo/config.toml" 'build.target = "x"')" = \
     "the Cargo configuration in a folder above the repository: .cargo/config.toml has a key named target"
+# shellcheck disable=SC2317 # called by environment_refusals in the subshell
+check "configuration files that cannot be listed are refused" test \
+    "$(cargo_configs() { return 1; }; environment_refusals "$crepo" "$chome")" = "the Cargo configuration files could not be listed"
 check "a refused variable is named" test "$(export CARGO_TARGET_DIR=/x; environment_refusals "$crepo" "$chome")" = \
     "CARGO_TARGET_DIR is set; a release is built with its own compiler flags and output folder only"
 
@@ -164,6 +174,14 @@ forbidden=""
 forbid "home folder" "/x/y"
 forbid "Cargo home" "/x/y"
 forbid "repository" "/x/y z"
+for good in "4.3.0 x86_64" "10.20.30 aarch64" "4.3.0 arm64"; do
+    # shellcheck disable=SC2086 # two words on purpose
+    check "plain names: $good" plain_names $good
+done
+for bad in "4.3 x86_64" "4.3.0-rc1 x86_64" "1.2/../3 x86_64" "4.3.0 x86/64" "4.3.0 .." "4.3.0 x86-64" " x86_64"; do
+    # shellcheck disable=SC2086 # two words on purpose
+    check "not plain names: '$bad'" not plain_names $bad
+done
 check "a path is forbidden once" test "$forbidden" = "home folder	/x/y
 repository	/x/y z
 "
@@ -240,6 +258,22 @@ fi
 release_like "$work/rel"
 check "no forbidden paths is refused" refused_scan "$work/rel" ""
 check "the root as a forbidden path is refused" refused_scan "$work/rel" "home folder	/"
+release_like "$work/rel"
+ln -s wgal "$work/rel/sub/link"
+scan_out=$(scan_release "$work/rel" "$list" 2>&1) || true
+check "a link is named inside the release" grep -qxF "make-release.sh: sub/link is a link or another kind of file; a release holds only files and folders" <<<"$scan_out"
+if [ "$(id -u)" -ne 0 ]; then
+    release_like "$work/rel"
+    chmod 000 "$work/rel/sub"
+    scan_out=$(scan_release "$work/rel" "$list" 2>&1) && scan_rc=0 || scan_rc=$?
+    chmod 700 "$work/rel/sub"
+    check "a folder that cannot be listed is refused" test "$scan_rc" -ne 0
+    check "a folder that cannot be listed: the message names no path" test "${scan_out/"$work"/}" = "$scan_out"
+    echo '[net]' >"$work/unreadable.toml"
+    chmod 000 "$work/unreadable.toml"
+    check "an unreadable configuration's refusal names no path" test "$(config_refusal "$work/unreadable.toml" 2>&1)" = "it is not a readable file"
+    chmod 600 "$work/unreadable.toml"
+fi
 mkdir -p "$work/no-perl"
 check "without perl nothing passes" refused_without_perl "$work/rel" "$list"
 

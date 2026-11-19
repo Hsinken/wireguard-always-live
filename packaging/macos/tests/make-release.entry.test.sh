@@ -28,12 +28,12 @@ set -euo pipefail
 source_root=$(cd "$(dirname "$0")/../../.." && pwd -P)
 failures=0
 check() { # name, then the command that must succeed
-    local name=$1
+    local check_name=$1
     shift
     if "$@"; then
-        echo "PASS $name"
+        echo "PASS $check_name"
     else
-        echo "FAIL $name"
+        echo "FAIL $check_name"
         failures=$((failures + 1))
     fi
 }
@@ -109,6 +109,7 @@ esac
 mkdir -p target/release
 content "$program" >"target/release/$program"
 [ -z "${FAKE_TOUCH:-}" ] || echo "# changed by the build" >>"$FAKE_TOUCH"
+[ -z "${FAKE_NEWFILE:-}" ] || echo "// made by the build" >"$FAKE_NEWFILE"
 EOF
 cat >"$work/bin/pnpm" <<'EOF'
 #!/usr/bin/env bash
@@ -121,6 +122,31 @@ echo "fake Info.plist" >"$app/Contents/Info.plist"
 content wgal-desktop >"$app/Contents/MacOS/wgal-desktop"
 EOF
 chmod +x "$work/bin/cargo" "$work/bin/pnpm" "$work/bin/ditto" "$work/bin/codesign"
+# git that fails `git status` (FAKE_GIT_FAIL=status), or only once cargo has
+# run (FAKE_GIT_FAIL=after-build); otherwise the real one.
+mkdir -p "$work/gitbin" "$work/hashbin"
+real_git=$(command -v git)
+cat >"$work/gitbin/git" <<EOF
+#!/usr/bin/env bash
+if [ "\$1" = -c ]; then sub=\$3; else sub=\$1; fi
+if [ "\$sub" = status ]; then
+    case "\${FAKE_GIT_FAIL:-}" in
+    status) exit 128 ;;
+    after-build) grep -q '^cargo args' "\$FAKE_LOG" && exit 128 ;;
+    esac
+fi
+exec "$real_git" "\$@"
+EOF
+# The hash tool, failing for the archive itself when FAKE_HASH_FAIL is set.
+real_hash=$(command -v shasum)
+cat >"$work/hashbin/shasum" <<EOF
+#!/usr/bin/env bash
+if [ -n "\${FAKE_HASH_FAIL:-}" ]; then
+    for a in "\$@"; do case "\$a" in *.zip) exit 1 ;; esac; done
+fi
+exec "$real_hash" "\$@"
+EOF
+chmod +x "$work/gitbin/git" "$work/hashbin/shasum"
 
 home="$work/home ä"
 mkdir -p "$home/.cargo"
@@ -289,9 +315,52 @@ check "a relative CARGO_HOME: packed" test "$code" -eq 0
 check "a relative CARGO_HOME: taken from where the script started" \
     test "$(times_logged "cargo flags=$(flags "$work/elsewhere/cargo rel")")" -eq 3
 check "a relative CARGO_HOME: cargo gets it absolute" test "$(times_logged "cargo home=$work/elsewhere/cargo rel")" -eq 3
+check "before a refusal: the release is there" test -f "dist/$name.zip"
 run "CARGO_HOME=$work/missing"
 check "a missing Cargo home: refused" refused_with "Cargo's home folder was not found"
 check "a missing Cargo home: nothing built" nothing_built
+check "a missing Cargo home: the same-name release was deleted" nothing_packed
+
+# dist/ as a link is refused before anything is deleted.
+mv dist "$work/dist.saved"
+mkdir -p "$work/outside/$name"
+echo keep >"$work/outside/$name/sentinel"
+echo keep >"$work/outside/$name.zip"
+ln -s "$work/outside" dist
+run
+check "dist/ as a link: refused" refused_with "dist/ is a link or not a folder"
+check "dist/ as a link: nothing built" nothing_built
+check "dist/ as a link: the folder it points to is untouched" test -f "$work/outside/$name/sentinel" -a -f "$work/outside/$name.zip"
+rm dist
+mv "$work/dist.saved" dist
+
+# A version that is not a plain name is refused before anything is deleted.
+cp Cargo.toml "$work/Cargo.toml.saved"
+printf '[workspace.package]\nversion = "9.8.7/../../x"\n' >Cargo.toml
+run
+check "a version that is not a plain name: refused" refused_with "not a plain name"
+check "a version that is not a plain name: nothing built" nothing_built
+cp "$work/Cargo.toml.saved" Cargo.toml
+
+# git failing is never taken for a clean checkout.
+run "PATH=$work/gitbin:$work/bin:$PATH" FAKE_GIT_FAIL=status
+check "git status failing: refused" refused_with "git could not read the checkout"
+check "git status failing: nothing built" nothing_built
+check "git status failing: nothing packed" nothing_packed
+run "PATH=$work/gitbin:$work/bin:$PATH" FAKE_GIT_FAIL=after-build
+check "git status failing after the build: refused" refused_with "git could not read the checkout"
+check "git status failing after the build: nothing packed" nothing_packed
+
+# A file the build adds to the checkout packs nothing.
+run "FAKE_NEWFILE=$repo/made-by-the-build.rs"
+check "a new file from the build: refused" refused_with "the build changed the checkout"
+check "a new file from the build: nothing packed" nothing_packed
+rm -f "$repo/made-by-the-build.rs"
+
+# The last step failing leaves nothing either.
+run "PATH=$work/hashbin:$work/bin:$PATH" FAKE_HASH_FAIL=1
+check "the archive's hash failing: refused" test "$code" -ne 0
+check "the archive's hash failing: nothing packed" nothing_packed
 
 # Refused variables build nothing, and the same-name release goes first;
 # other files in dist/ stay.
