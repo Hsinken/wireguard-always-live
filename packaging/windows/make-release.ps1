@@ -43,9 +43,9 @@ The programs must not name the computer that built them (4.3.0):
   (CARGO_ENCODED_RUSTFLAGS, --remap-path-prefix). Both variables are put
   back as they were when it ends, built or not.
 - The window is built with --locked too ('--' quoted, or Windows
-  PowerShell drops it before pnpm), and git must report the same checkout
-  after the builds as before (Cargo.lock and untracked files included);
-  every git call must succeed.
+  PowerShell drops it before pnpm), and the checkout must be clean, without
+  untracked files, before and after the builds (Cargo.lock included); every
+  git call must succeed.
 - Before zipping, every file of the release, RELEASE.txt included, is
   searched for the three folders' paths, as UTF-8 and as UTF-16LE, with
   ASCII letters in either case, either separator (\ or /), and every
@@ -54,11 +54,15 @@ The programs must not name the computer that built them (4.3.0):
   any error zips nothing; the message names the file inside the release,
   which folder and which encoding, never the path itself.
 - The release is assembled in a temporary folder and its zip moved into
-  place last. When it stops, it prints only a message of its own, which
-  names no folder; any other error is named by its kind only.
+  place last. Before that the zip is unpacked in the same folder and
+  checked again: it must hold exactly the release's files, and its files
+  are searched again. Every file this script writes is under target\ or
+  dist\. When it stops, it prints only a message of its own, which names no
+  folder; any other error is named by its kind only.
 
 A build writes target\release\wgal-build.txt beside the programs: the
-commit, the version and each program's SHA-256.
+commit, the version, the rewrites' destinations (/cargo, /wgal) and each
+program's SHA-256.
 
 .PARAMETER NoBuild
 Use the programs already in target\release instead of building them. Only
@@ -75,7 +79,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+# A plain path, not resolved as a pattern: a folder name may hold [ or ].
+$Root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $Programs = @('wgal-watchdog.exe', 'wgal-desktop.exe', 'wgal-mcp.exe', 'wgal.exe')
 $Scripts = @('install.ps1', 'uninstall.ps1', 'revert.ps1', 'setup.ps1', 'install.cmd', 'uninstall.cmd', 'revert.cmd', 'setup.cmd')
 # This folder's README in English and in Traditional Chinese, and the
@@ -87,7 +92,7 @@ $RecordFile = 'target\release\wgal-build.txt'
 
 # The build record's lines for the programs in $Folder as they are now.
 function Get-BuildRecord([string] $Folder, [string] $Commit, [string] $Version, [string[]] $Files) {
-    $lines = @("commit $Commit", "version $Version")
+    $lines = @("commit $Commit", "version $Version", 'paths rewritten as /cargo and /wgal')
     foreach ($file in $Files) {
         $path = Join-Path $Folder $file
         $hash = if (Test-Path -LiteralPath $path -PathType Leaf) {
@@ -111,9 +116,13 @@ function Test-BuildRecord([string] $Record, [string[]] $Expected) {
         return "there is no build record ($RecordFile); build once without -NoBuild"
     }
     $recorded = @([IO.File]::ReadAllLines($Record))
-    $commit = ($recorded | Where-Object { $_ -like 'commit *' } | Select-Object -First 1)
-    if ($commit -ne $Expected[0]) {
-        return "the programs were built from another commit ($commit), not $($Expected[0])"
+    # What a record says is not repeated: it may hold anything.
+    $commits = @($recorded | Where-Object { $_ -like 'commit *' })
+    if ($commits.Count -ne 1 -or $commits[0] -cnotmatch '^commit [0-9a-f]{40}$') {
+        return "the build record ($RecordFile) is not one this script wrote; build once without -NoBuild"
+    }
+    if ($commits[0] -cne $Expected[0]) {
+        return "the programs were built from another commit, not $($Expected[0].Substring(7))"
     }
     if (($recorded -join "`n") -cne ($Expected -join "`n")) {
         return 'a program changed since it was built, or the version differs from the record'
@@ -321,6 +330,12 @@ function Get-FolderNames([string] $Folder) {
     Stop-Safe 'no short name'
 }
 
+# The text with the ASCII letters A to Z in lower case, every other
+# character as it is.
+function ConvertTo-AsciiLower([string] $Text) {
+    return [regex]::Replace($Text, '[A-Z]', { param($m) $m.Value.ToLowerInvariant() })
+}
+
 # Every spelling of the absolute path that writes each of its parts in its
 # long or its 8.3 short name; throws when a part's names cannot be read.
 function Get-PathSpellings([string] $Full) {
@@ -331,7 +346,10 @@ function Get-PathSpellings([string] $Full) {
         $sofar = "$sofar\$part"
         $names = @($part)
         foreach ($name in Get-FolderNames $sofar) {
-            if (-not ($names -contains $name)) {
+            # Only ASCII letters' case is folded, as the search folds it:
+            # spellings that differ in a non-ASCII letter's case are
+            # different bytes, and both are kept.
+            if (-not @($names | Where-Object { [string]::Equals((ConvertTo-AsciiLower $_), (ConvertTo-AsciiLower $name), [StringComparison]::Ordinal) })) {
                 $names += $name
             }
         }
@@ -365,6 +383,31 @@ function Get-PathPattern([string] $Path, [bool] $Utf16) {
         }
     }
     return $pattern.ToString()
+}
+
+# Zips the folder's files under the folder's own name, and unpacks a zip,
+# with .NET's ZipFile, which takes paths as they are (Windows PowerShell's
+# Compress-Archive reads [ and ] in a path as a pattern). Each entry is
+# named with / between its parts, as zip files are meant to be: .NET's own
+# CreateFromDirectory writes \ under Windows PowerShell.
+function New-ReleaseZip([string] $Folder, [string] $Zip) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $top = [IO.Path]::GetFileName($Folder.TrimEnd('\'))
+    $archive = [IO.Compression.ZipFile]::Open($Zip, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($relative in @(Get-ReleaseFiles $Folder)) {
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $Folder $relative),
+                ($top + '/' + $relative.Replace('\', '/')), [IO.Compression.CompressionLevel]::Optimal)
+        }
+    } finally {
+        $archive.Dispose()
+    }
+}
+
+function Expand-ReleaseZip([string] $Zip, [string] $Destination) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::ExtractToDirectory($Zip, $Destination)
 }
 
 # Every file under $Folder, as paths inside it, sorted; throws on a link or
@@ -515,17 +558,15 @@ try {
         Stop-Safe 'make-release.ps1: the 8.3 short names of the folders could not be read; nothing was built'
     }
 
-    Push-Location $repository
+    Push-Location -LiteralPath $repository
     $pushed = $true
     # git prints the top folder in the console's code page here, so ask for
     # the way up from here instead: none when this is the top.
     if ((@(Invoke-Git rev-parse --show-cdup) -join '').Trim()) {
         Stop-Safe 'make-release.ps1: the script is not in the repository it runs in'
     }
-    $before = Get-CheckoutState
-    $tracked = @($before -split "`n" | Where-Object { $_ -and -not $_.StartsWith('?? ') })
-    if ($tracked.Count -gt 0) {
-        Stop-Safe 'make-release.ps1: the checkout has uncommitted changes; a release is built from a commit.'
+    if (Get-CheckoutState) {
+        Stop-Safe 'make-release.ps1: the checkout has uncommitted changes or untracked files; a release is built from a clean checkout.'
     }
     $commit = (@(Invoke-Git rev-parse HEAD) -join '').Trim()
 
@@ -552,7 +593,7 @@ try {
         Invoke-Checked 'wgal-desktop' { pnpm --filter '@wgal/desktop' run tauri build --no-bundle '--' --locked }
         $after = Get-CheckoutState
         $now = (@(Invoke-Git rev-parse HEAD) -join '').Trim()
-        if ($after -cne $before -or $now -ne $commit) {
+        if ($after -or $now -ne $commit) {
             Stop-Safe 'make-release.ps1: the build changed the checkout (Cargo.lock, or a new file?); nothing was packed'
         }
         Write-BuildRecord $record (Get-BuildRecord $built $commit $version $Programs)
@@ -599,7 +640,28 @@ try {
         Stop-Safe "make-release.ps1: the release names the computer that built it ($hits places); nothing was packed"
     }
 
-    Compress-Archive -Path $temp -DestinationPath (Join-Path $work "$name.zip")
+    New-ReleaseZip $temp (Join-Path $work "$name.zip")
+    # The zip as it will be delivered: exactly the release's files, and those
+    # searched again.
+    $check = Join-Path $work 'check'
+    try {
+        Expand-ReleaseZip (Join-Path $work "$name.zip") $check
+        $packedFiles = @(Get-ReleaseFiles $temp) -join "`n"
+        $unpackedFiles = @(Get-ReleaseFiles (Join-Path $check $name)) -join "`n"
+    } catch {
+        Stop-Safe "make-release.ps1: the zip could not be checked ($(Get-SafeMessage $_ 'an error')); nothing was packed"
+    }
+    if ($packedFiles -cne $unpackedFiles) {
+        Stop-Safe 'make-release.ps1: the zip holds other files than the release; nothing was packed'
+    }
+    try {
+        $hits = Find-BuildPaths (Join-Path $check $name) $forbidden
+    } catch {
+        Stop-Safe "make-release.ps1: the zip could not be checked ($(Get-SafeMessage $_ 'an error')); nothing was packed"
+    }
+    if ($hits -gt 0) {
+        Stop-Safe "make-release.ps1: the zip names the computer that built it ($hits places); nothing was packed"
+    }
     Move-Item -LiteralPath $temp -Destination $stage
     Move-Item -LiteralPath (Join-Path $work "$name.zip") -Destination $zip
     Remove-Made $work

@@ -136,7 +136,7 @@ function Invoke-Release([hashtable] $Vars = @{}, [switch] $NoBuild, [string] $Sc
         [Environment]::SetEnvironmentVariable($name, $set[$name], 'Process')
     }
     [IO.File]::WriteAllText($log, '')
-    Push-Location $From
+    Push-Location -LiteralPath $From
     try {
         # Its error goes to stderr; Windows PowerShell 5.1 would make that
         # an exception here, and Out-String would wrap it at the console's
@@ -174,7 +174,8 @@ try {
         [IO.File]::WriteAllText((Join-Path $work 'Cargo.lock'), "# fake lock file`n")
         # The one version (since 4.2.1) is the workspace's; package.json has none.
         [IO.File]::WriteAllText((Join-Path $work 'apps\desktop\package.json'), '{ "name": "@wgal/desktop", "private": true }')
-        [IO.File]::WriteAllText((Join-Path $work '.gitignore'), "target/`ndist/`n")
+        # The tests' Cargo configurations, in the checkout, are ignored by git.
+        [IO.File]::WriteAllText((Join-Path $work '.gitignore'), "target/`ndist/`n.cargo/`n")
         git init -q . 2>&1 | Out-Null
         git -c user.name=test -c user.email=test@example.invalid add -A 2>&1 | Out-Null
         git -c user.name=test -c user.email=test@example.invalid commit -q -m 'scratch' 2>&1 | Out-Null
@@ -191,7 +192,7 @@ try {
         $zip = Join-Path $dist "$name.zip"
         $lines = {
             param($commit, $listed = $exes, $version = '9.8.7')
-            $l = @("commit $commit", "version $version")
+            $l = @("commit $commit", "version $version", 'paths rewritten as /cargo and /wgal')
             foreach ($exe in $listed) {
                 $l += "$((Get-FileHash -Algorithm SHA256 (Join-Path $work "target\release\$exe")).Hash.ToLower())  $exe"
             }
@@ -236,6 +237,12 @@ try {
         $r = Invoke-Release -NoBuild
         Check 'a record without the command line: refused' ($r.Code -ne 0 -and $r.Out -like '*changed*')
         Check 'a record without the command line: nothing packed' (-not (Test-Path $dist))
+
+        # A record this script did not write: what it says is not repeated.
+        & $lines (Join-Path $top 'secret')
+        $r = Invoke-Release -NoBuild
+        Check 'a record this script did not write: refused' ($r.Code -ne 0 -and $r.Out -like '*not one this script wrote*')
+        Check 'a record this script did not write: the path is not printed' (& $noPath $r)
 
         # The same commit and programs, built as another version.
         & $lines $head $exes '9.8.6'
@@ -299,6 +306,12 @@ try {
         Check 'a build: CARGO_HOME is the profile folder''s .cargo' ((& $timesLogged "cargo home=$cargoHome") -eq 3)
         Check "a build: the window's build gets that CARGO_HOME" ((& $timesLogged "pnpm home=$cargoHome") -eq 1)
         Check 'a build: every packed file was checked' ($r.Out -like "*Checked $(& $filesIn $stage) files: no build paths*")
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $opened = [IO.Compression.ZipFile]::OpenRead($zip)
+        $entryNames = @($opened.Entries | ForEach-Object { $_.FullName })
+        $opened.Dispose()
+        Check "a build: the zip's entries are named with / only" ($entryNames.Count -gt 0 -and @($entryNames | Where-Object { $_.Contains('\') -or -not $_.StartsWith("$name/") }).Count -eq 0)
+        Check 'a build: the zip is checked again after packing' (@($r.Out -split "`n" | Where-Object { $_ -match '^Checked \d+ files: no build paths' }).Count -eq 2)
         Check 'a build: no temporary folder is left' (@(Get-ChildItem -LiteralPath $dist -Force -Filter '.wgal-*').Count -eq 0)
         Check 'a build: the record names this commit' (@([IO.File]::ReadAllLines($record)) -contains "commit $head")
 
@@ -355,6 +368,26 @@ try {
         $r = Invoke-Release @{ PATH = "$gitbin;$bin;$basePath"; FAKE_REAL_GIT = $realGit; FAKE_GIT_FAIL = 'after-build' }
         Check 'git status failing after the build: refused' ($r.Code -ne 0 -and $r.Out -like '*git could not read the checkout*')
         Check 'git status failing after the build: nothing packed' (& $nothingPacked)
+
+        # A file that is not in git, there before the build: refused, as the
+        # checkout is not clean.
+        $notes = Join-Path $work 'notes.txt'
+        [IO.File]::WriteAllText($notes, 'notes')
+        $r = Invoke-Release
+        Check 'an untracked file before the build: refused' ($r.Code -ne 0 -and $r.Out -like '*untracked files*')
+        Check 'an untracked file before the build: nothing built' (& $nothingBuilt)
+        Check 'an untracked file before the build: nothing packed' (& $nothingPacked)
+        Remove-Item -LiteralPath $notes
+
+        # A repository whose path has [ and ]: read as a plain path.
+        $bracketed = Join-Path $top 'with [brackets]'
+        New-Item -ItemType Directory -Path $bracketed | Out-Null
+        Copy-Item -LiteralPath $work -Destination $bracketed -Recurse
+        $copy = Join-Path $bracketed 'repo'
+        $r = Invoke-Release -Script (Join-Path $copy 'packaging\windows\make-release.ps1') -From $copy
+        Check 'a repository path with [ and ]: packed' ($r.Code -eq 0 -and (Test-Path -LiteralPath (Join-Path $copy "dist\$name.zip")))
+        $r = Invoke-Release -Script (Join-Path $copy 'packaging\windows\make-release.ps1') -From $copy @{ CARGO_HOME = (Join-Path $top 'missing') }
+        Check 'a repository path with [ and ]: a refusal names no path' ($r.Code -ne 0 -and (& $noPath $r))
 
         # A file the build adds to the checkout zips nothing.
         $newFile = Join-Path $work 'made-by-the-build.rs'
@@ -482,6 +515,86 @@ try {
             }
         }
         Check 'in this process: the build passed and the refusal refused' (($outcomes -join ',') -eq 'False,True')
+
+        # A zip that holds more than the release zips nothing.
+        $before = @{}
+        $set = @{ USERPROFILE = $profileDir; CARGO_HOME = $null; FAKE_LOG = $log; FAKE_EMBED = $null; PATH = "$bin;$basePath" }
+        foreach ($key in @($set.Keys)) {
+            $before[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
+            [Environment]::SetEnvironmentVariable($key, $set[$key], 'Process')
+        }
+        try {
+            $message = try {
+                & {
+                    . $script
+                    $made = ${function:New-ReleaseZip}
+                    function New-ReleaseZip([string] $Folder, [string] $Zip) {
+                        & $made $Folder $Zip
+                        $archive = [IO.Compression.ZipFile]::Open($Zip, 'Update')
+                        try {
+                            $entry = $archive.CreateEntry("$(Split-Path $Folder -Leaf)/extra.txt")
+                            $writer = New-Object IO.StreamWriter $entry.Open()
+                            $writer.Write($work)
+                            $writer.Dispose()
+                        } finally {
+                            $archive.Dispose()
+                        }
+                    }
+                    Invoke-Main
+                } 6>&1 | Out-Null
+                'none'
+            } catch {
+                $_.Exception.Message
+            }
+            Check 'a zip with another file: refused' ($message -like '*the zip holds other files than the release*')
+            Check 'a zip with another file: nothing packed' (& $nothingPacked)
+            Check 'a zip with another file: the path is not printed' (-not $message.Contains($top.TrimEnd('\')))
+        } finally {
+            foreach ($key in @($before.Keys)) {
+                [Environment]::SetEnvironmentVariable($key, $before[$key], 'Process')
+            }
+        }
+
+        # A zip whose file differs from the release's (the same names) zips
+        # nothing: the unpacked files are searched again.
+        $before = @{}
+        $set = @{ USERPROFILE = $profileDir; CARGO_HOME = $null; FAKE_LOG = $log; FAKE_EMBED = $null; PATH = "$bin;$basePath" }
+        foreach ($key in @($set.Keys)) {
+            $before[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
+            [Environment]::SetEnvironmentVariable($key, $set[$key], 'Process')
+        }
+        try {
+            $message = try {
+                & {
+                    . $script
+                    $made = ${function:New-ReleaseZip}
+                    function New-ReleaseZip([string] $Folder, [string] $Zip) {
+                        & $made $Folder $Zip
+                        $archive = [IO.Compression.ZipFile]::Open($Zip, 'Update')
+                        try {
+                            $inside = "$(Split-Path $Folder -Leaf)/README.md"
+                            $archive.GetEntry($inside).Delete()
+                            $writer = New-Object IO.StreamWriter $archive.CreateEntry($inside).Open()
+                            $writer.Write($work)
+                            $writer.Dispose()
+                        } finally {
+                            $archive.Dispose()
+                        }
+                    }
+                    Invoke-Main
+                } 6>&1 | Out-Null
+                'none'
+            } catch {
+                $_.Exception.Message
+            }
+            Check 'a zip whose file names the repository: refused' ($message -like '*the zip names the computer that built it*')
+            Check 'a zip whose file names the repository: nothing packed' (& $nothingPacked)
+            Check 'a zip whose file names the repository: the path is not printed' (-not $message.Contains($top.TrimEnd('\')))
+        } finally {
+            foreach ($key in @($before.Keys)) {
+                [Environment]::SetEnvironmentVariable($key, $before[$key], 'Process')
+            }
+        }
 
         # The last step failing (the zip's hash) leaves nothing either.
         $before = @{}

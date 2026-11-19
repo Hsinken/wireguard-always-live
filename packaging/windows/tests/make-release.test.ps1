@@ -38,10 +38,18 @@ try {
 
     Write-BuildRecord $record (& $now $commit '4.2.1')
     Check 'the record holds one version' (@([IO.File]::ReadAllLines($record)) -contains 'version 4.2.1')
+    Check "the record names the rewrites' destinations" (@([IO.File]::ReadAllLines($record)) -contains 'paths rewritten as /cargo and /wgal')
     Check 'the same commit, version and programs are accepted' ($null -eq (Test-BuildRecord $record (& $now $commit '4.2.1')))
 
     $why = Test-BuildRecord $record (& $now 'fedcba9876543210fedcba9876543210fedcba98' '4.2.1')
     Check 'another commit is refused' ($null -ne $why -and $why -like '*another commit*')
+
+    $saved = [IO.File]::ReadAllText($record)
+    [IO.File]::WriteAllText($record, "commit $folder\secret`n")
+    $why = Test-BuildRecord $record (& $now $commit '4.2.1')
+    Check 'a record this script did not write is refused' ($null -ne $why -and $why -like '*not one this script wrote*')
+    Check 'a record this script did not write: what it says is not repeated' (-not $why.Contains($folder.TrimEnd('\')))
+    [IO.File]::WriteAllText($record, $saved)
 
     $why = Test-BuildRecord $record (& $now $commit '4.2.2')
     Check 'another version is refused' ($null -ne $why -and $why -like '*version differs*')
@@ -193,6 +201,17 @@ try {
             ($spellings -contains 'C:\a\long name one\b\LONGNA~2') -and ($spellings -contains 'C:\a\LONGNA~1\b\LONGNA~2'))
         Check 'a path given in short names gets its long names too' ((@(Get-PathSpellings 'C:\a\LONGNA~1') -join '|') -eq 'C:\a\LONGNA~1|C:\a\long name one')
         Check 'a short name that differs only in case is not doubled' (@(Get-PathSpellings 'C:\abc\def').Count -eq 1)
+        $eSmall = [string][char]0xE9
+        $eCapital = [string][char]0xC9
+        Set-Item function:Get-FolderNames {
+            param([string] $Folder)
+            $leaf = Split-Path $Folder -Leaf
+            if ($leaf -eq "caf$([char]0xE9)") { return @("caf$([char]0xC9)", 'CAFE~1') }
+            return @($leaf, $leaf)
+        }
+        $spellings = @(Get-PathSpellings "C:\caf$eSmall")
+        Check 'a spelling that differs only in a non-ASCII letter is kept' ($spellings.Count -eq 3 -and
+            ($spellings -ccontains "C:\caf$eSmall") -and ($spellings -ccontains "C:\caf$eCapital") -and ($spellings -ccontains 'C:\CAFE~1'))
         Set-Item function:Get-FolderNames { param([string] $Folder) throw 'no short name' }
         Check 'a short name that cannot be read is refused' (& $threw { Get-PathSpellings 'C:\a' })
     } finally {
@@ -278,6 +297,14 @@ try {
             & $put 'wgal.exe' $spelling[1] $utf16
             Check "the repository spelled $($spelling[0]), UTF-16LE ${utf16}: refused" ((& $scan).Hits -eq 1)
         }
+    }
+    $cafe = 'C:\X\caf' + [string][char]0xC9
+    $both = @([pscustomobject]@{ Label = 'repository'; Spellings = @(('C:\X\caf' + [string][char]0xE9), $cafe) })
+    foreach ($utf16 in @($false, $true)) {
+        & $releaseLike
+        & $put 'wgal.exe' $cafe $utf16
+        $found = @(& { Find-BuildPaths $rel $both } 6>&1 | Where-Object { $_ -isnot [Management.Automation.InformationRecord] })[-1]
+        Check "the spelling with the other non-ASCII case, UTF-16LE ${utf16}: refused" ($found -eq 1)
     }
     & $releaseLike
     [IO.File]::WriteAllText((Join-Path $rel 'RELEASE.txt'), "Commit 1`n$sRepo`n")
