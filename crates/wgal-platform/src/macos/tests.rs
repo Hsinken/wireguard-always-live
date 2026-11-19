@@ -297,6 +297,46 @@ fn tool_failures_are_not_tunnel_states() {
     );
 }
 
+/// The list as macOS 27.2.1 writes it, with a colon in the type
+/// (`nc_list_macos27.txt`: the layout of a real list, invented IDs and names).
+#[test]
+fn discovers_the_list_macos_27_writes() {
+    let adapter = mac();
+    reply(&adapter, 0, &fixture("nc_list_macos27.txt"));
+
+    let found = adapter.discover().unwrap();
+    let summary: Vec<_> = found
+        .iter()
+        .map(|d| (d.binding.as_str(), d.display_name.as_str(), d.control))
+        .collect();
+    assert_eq!(
+        summary,
+        [
+            (B1, "Office", Capability::Supported),
+            (B2, "Home", Capability::Supported),
+        ]
+    );
+}
+
+/// The status as macOS 27.2.1 writes it (`nc_status_macos27.txt`: the
+/// structure of a real one, with `ConnectCount` under
+/// `ConnectionStatistics`, dictionaries inside an array, an empty array and
+/// an empty value; every value invented). Parsed from a copy, not on a
+/// device.
+#[test]
+fn reads_the_status_macos_27_writes() {
+    let adapter = mac();
+    reply(&adapter, 0, &fixture("nc_status_macos27.txt"));
+    assert_eq!(
+        adapter.query_state(&binding(B2)).unwrap(),
+        OsState::Connected
+    );
+    assert_eq!(
+        resolved(&adapter, B2, "nc_status_macos27.txt"),
+        utun("utun5", [192, 0, 2, 10], 4)
+    );
+}
+
 // resolve_interface
 
 #[test]

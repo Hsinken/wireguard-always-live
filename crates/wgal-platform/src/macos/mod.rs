@@ -21,7 +21,7 @@
 //!   configuration in its own store, `scutil` runs no user-supplied hooks, and
 //!   WGAL runs as the same logged-in user, so no privilege boundary is crossed.
 //! - `discover` lists only configurations whose service type is
-//!   [`list::WIREGUARD_KIND`]. Other VPN services (IPsec, L2TP, other apps)
+//!   [`list::WIREGUARD_KINDS`]. Other VPN services (IPsec, L2TP, other apps)
 //!   are not WireGuard tunnels and are left out. Disabled WireGuard services
 //!   are listed with control `Unknown`.
 //! - `start` and `stop` only issue `scutil --nc start|stop`; the core waits for

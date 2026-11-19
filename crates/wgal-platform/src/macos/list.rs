@@ -2,12 +2,19 @@
 //!
 //! ```text
 //! Available network connection services in the current set (*=enabled):
-//! * (Connected)      00000000-0000-4000-8000-0000000000B1 VPN (com.wireguard.macos) "Office"            [VPN/com.wireguard.macos]
+//! * (Connected)      00000000-0000-4000-8000-0000000000B1 VPN (com.wireguard.macos) "Office"            [VPN:com.wireguard.macos]
 //! ```
 //!
 //! That is the enabled flag, the state in parentheses, the service ID, the
 //! interface's display name, the service name in double quotes, and the
-//! `[type/subtype]` of the service, separated by padding.
+//! `[type:subtype]` of the service, separated by padding.
+//!
+//! macOS 27.2.1 writes the type and subtype with a colon, as above (read on a
+//! Mac on 2026-11-20). Until then this parser expected a slash
+//! (`[VPN/com.wireguard.macos]`), from documentation rather than a device,
+//! and refused the colon: one line it could not read rejected the whole list,
+//! so no tunnel was found. Both are accepted: nothing shows that no macOS
+//! writes the slash.
 
 use super::status::NcState;
 use super::text::{Malformed, lines};
@@ -15,8 +22,10 @@ use super::uuid::VpnUuid;
 
 pub const HEADER: &str = "Available network connection services in the current set (*=enabled):";
 
-/// `[type/subtype]` of configurations made by the official WireGuard app.
-pub const WIREGUARD_KIND: &str = "VPN/com.wireguard.macos";
+/// `[type:subtype]` of configurations made by the official WireGuard app:
+/// with a colon as macOS 27.2.1 writes it, and with the slash this parser
+/// first expected. Only these exact texts are WireGuard.
+pub const WIREGUARD_KINDS: [&str; 2] = ["VPN:com.wireguard.macos", "VPN/com.wireguard.macos"];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Service {
@@ -29,7 +38,7 @@ pub struct Service {
 
 impl Service {
     pub fn is_wireguard(&self) -> bool {
-        self.kind == WIREGUARD_KIND
+        WIREGUARD_KINDS.contains(&self.kind.as_str())
     }
 }
 
@@ -84,7 +93,7 @@ fn parse_line(line: &str) -> Result<Service, Malformed> {
     let valid_kind = !kind.is_empty()
         && kind
             .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"./_-".contains(&b));
+            .all(|b| b.is_ascii_alphanumeric() || b"./_-:".contains(&b));
     if !valid_kind {
         return Err(Malformed("invalid service type"));
     }
@@ -142,7 +151,7 @@ mod tests {
                 state: NcState::Connected,
                 uuid: VpnUuid::parse(B1).unwrap(),
                 name: "Office \\\"A\\\"".into(),
-                kind: WIREGUARD_KIND.into(),
+                kind: "VPN/com.wireguard.macos".into(),
             }]
         );
         assert!(services[0].is_wireguard());
@@ -206,5 +215,69 @@ mod tests {
             )),
             Err(Malformed("unknown header"))
         );
+    }
+
+    /// The line as macOS 27.2.1 writes it (the ID and name are invented).
+    #[test]
+    fn parses_the_colon_macos_27_writes() {
+        let services = one(&format!(
+            "* (Connected)      {B1} VPN (com.wireguard.macos) \"Home\"             [VPN:com.wireguard.macos]"
+        ))
+        .unwrap();
+        assert_eq!(services.len(), 1);
+        assert_eq!(services[0].kind, "VPN:com.wireguard.macos");
+        assert_eq!(services[0].name, "Home");
+        assert_eq!(services[0].state, NcState::Connected);
+        assert!(services[0].is_wireguard());
+    }
+
+    /// Another type with a colon: not seen on a device, written here only to
+    /// show that it parses and is not taken for WireGuard.
+    #[test]
+    fn another_type_with_a_colon_parses_but_is_not_wireguard() {
+        let services = one(&format!(
+            "* (Disconnected)   {B1} PPP --> L2TP       \"Corporate L2TP\"     [PPP:L2TP]"
+        ))
+        .unwrap();
+        assert_eq!(services[0].kind, "PPP:L2TP");
+        assert!(!services[0].is_wireguard());
+    }
+
+    /// Only the two exact texts are WireGuard: no prefix, case or extra text.
+    #[test]
+    fn wireguard_is_only_the_exact_types() {
+        for kind in [
+            "VPN:com.wireguard.macos.extra",
+            "VPN:com.wireguard",
+            "vpn:com.wireguard.macos",
+            "VPN::com.wireguard.macos",
+            "VPN-com.wireguard.macos",
+        ] {
+            let services = one(&format!(
+                "* (Connected)      {B1} VPN (com.wireguard.macos) \"Home\"   [{kind}]"
+            ))
+            .unwrap();
+            assert!(!services[0].is_wireguard(), "{kind}");
+        }
+    }
+
+    /// Characters outside letters, digits and `./_-:` still reject the type,
+    /// and with it the whole list.
+    #[test]
+    fn other_characters_in_the_type_are_still_refused() {
+        for kind in [
+            "VPN;com.wireguard.macos",
+            "VPN com.wireguard.macos",
+            "VPN:com.wireguard.macos\u{e9}",
+            "",
+        ] {
+            assert_eq!(
+                one(&format!(
+                    "* (Connected)      {B1} VPN (com.wireguard.macos) \"Home\"   [{kind}]"
+                )),
+                Err(Malformed("invalid service type")),
+                "{kind:?}"
+            );
+        }
     }
 }
