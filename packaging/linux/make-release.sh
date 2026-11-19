@@ -18,28 +18,34 @@
 #
 # The programs must not name the computer that built them (4.3.0):
 #
+# - First it deletes this version's same-name release folder and archive in
+#   dist/, once the version and architecture are plain names and dist/ is
+#   the repository's own folder (not a link); whatever stops it later
+#   removes what it made, so a failed run leaves neither.
 # - It builds only in the expected environment. It refuses, building
 #   nothing, when compiler flags or Cargo's output folder are set from
 #   outside: the variables RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS,
 #   CARGO_BUILD_RUSTFLAGS, CARGO_TARGET_<triple>_RUSTFLAGS,
 #   CARGO_TARGET_DIR, CARGO_BUILD_TARGET_DIR or CARGO_BUILD_TARGET, or a
 #   Cargo configuration file (.cargo/config.toml or .cargo/config in a
-#   folder cargo runs in or any folder above it, or in Cargo's home) that
-#   mentions rustflags or target-dir or has a key named target.
+#   folder cargo runs in or any folder above it, or config.toml or config
+#   in Cargo's home) that mentions rustflags or target-dir, has a key named
+#   target, or has an escape (\u, \U or \x) that could spell a key.
 # - It resolves Cargo's home (CARGO_HOME, relative to where the script was
 #   started, or ~/.cargo), the repository and the home folder to absolute
 #   paths without symbolic links, exports that CARGO_HOME, and builds with
 #   only two flags, which write those two folders in the programs as /cargo
 #   and /wgal (CARGO_ENCODED_RUSTFLAGS, --remap-path-prefix).
-# - The window is built with --locked too, and the checkout must be
-#   unchanged after the builds (Cargo.lock included).
+# - The window is built with --locked too, and git must report the same
+#   checkout after the builds as before (Cargo.lock and untracked files
+#   included); every git call must succeed.
 # - Before packing, every file of the release, RELEASE.txt included, is
 #   searched for the three folders' paths, as UTF-8 and as UTF-16LE. A hit,
-#   or any error, packs nothing; the message names the file inside the
-#   release, which folder and which encoding, never the path itself.
-# - The same-name folder and archive in dist/ are deleted first; the
-#   release is assembled in a temporary folder and its archive renamed into
-#   place only when everything passed, so a failed run leaves neither.
+#   a link or any other kind of file, or any error (listing, opening or
+#   reading) packs nothing; the message names the file inside the release,
+#   which folder and which encoding, never the path.
+# - The release is assembled in a temporary folder, and its archive renamed
+#   into place last.
 #
 # A build writes target/release/wgal-build.txt beside the programs: the
 # commit, the version and each program's SHA-256. --no-build packs the
@@ -100,6 +106,12 @@ has_control() { # text
     return 1
 }
 
+# Whether the version and the architecture are plain names, so the release's
+# file names stay inside dist/.
+plain_names() { # version arch
+    [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ "$2" =~ ^[A-Za-z0-9_]+$ ]]
+}
+
 # The exported variables that would add compiler flags or move Cargo's
 # output, as themselves or as Cargo's own configuration keys. Prints each.
 refused_variables() {
@@ -141,23 +153,39 @@ cargo_configs() { # cargo_home folder...
     } | LC_ALL=C sort -u
 }
 
+# Whether the file matches the extended regular expression: 0 yes, 1 no,
+# 2 it could not be read (grep's own message, which names the file, is
+# not shown).
+file_matches() { # file regex
+    local rc=0
+    grep -qE -- "$2" "$1" 2>/dev/null || rc=$?
+    case "$rc" in
+    0 | 1) return "$rc" ;;
+    *) return 2 ;;
+    esac
+}
+
 # What a configuration file has that a release build refuses, whatever its
 # TOML spelling: any mention of rustflags or target-dir (in a comment too),
-# or a key named target (build.target moves the output to target/<triple>/).
-# Prints it and succeeds; fails when the file has none. A file that cannot
-# be read is refused.
+# an escape that could spell a key (\u, \U or \x after an even number of
+# backslashes; in a literal string too, which is refused rather than told
+# apart), or a key named target (build.target moves the output to
+# target/<triple>/). Prints it and succeeds; fails when the file has none.
+# A file that cannot be read is refused.
 config_refusal() { # file
-    local key rc
+    local rc check
     if [ ! -f "$1" ] || [ ! -r "$1" ]; then
         echo "it is not a readable file"
         return 0
     fi
-    for key in rustflags target-dir; do
+    for check in "rustflags:rustflags" "target-dir:target-dir" \
+        "an escape (\\u, \\U or \\x) that could spell a key:(^|[^\\\\])(\\\\\\\\)*\\\\[uUx]" \
+        "a key named target:(^|[^A-Za-z0-9_-])target[\"']?[[:space:]]*="; do
         rc=0
-        grep -qF -- "$key" "$1" || rc=$?
+        file_matches "$1" "${check#*:}" || rc=$?
         case "$rc" in
         0)
-            echo "$key"
+            echo "${check%%:*}"
             return 0
             ;;
         1) ;;
@@ -167,13 +195,7 @@ config_refusal() { # file
             ;;
         esac
     done
-    rc=0
-    grep -qE -- "(^|[^A-Za-z0-9_-])target[\"']?[[:space:]]*=" "$1" || rc=$?
-    case "$rc" in
-    0) echo "a key named target" ;;
-    1) return 1 ;;
-    *) echo "it could not be read" ;;
-    esac
+    return 1
 }
 
 # Where a configuration file is, without the account's folders.
@@ -189,28 +211,34 @@ config_place() { # file root cargo_home
 # succeeds when there is one; fails when there is none. Cargo runs in the
 # repository and, for the window, in apps/desktop/src-tauri.
 environment_refusals() { # root cargo_home
-    local root=$1 home=$2 found=1 name file why
+    local root=$1 home=$2 found=1 name file why configs
     for name in $(refused_variables); do
         echo "$name is set; a release is built with its own compiler flags and output folder only"
         found=0
     done
+    if ! configs=$(cargo_configs "$home" "$root" "$root/apps/desktop/src-tauri"); then
+        echo "the Cargo configuration files could not be listed"
+        return 0
+    fi
     while IFS= read -r file; do
         [ -n "$file" ] || continue
         if why=$(config_refusal "$file"); then
             echo "the Cargo configuration in $(config_place "$file" "$root" "$home") has $why"
             found=0
         fi
-    done < <(cargo_configs "$home" "$root" "$root/apps/desktop/src-tauri")
+    done <<<"$configs"
     return "$found"
 }
 
-# The perl program that searches a folder for the forbidden paths (perl-base
-# on Ubuntu: built-in functions only, no module but strict and warnings).
+# The perl program that searches the listed files for the forbidden paths
+# (perl-base on Ubuntu: built-in functions only, no module but strict and
+# warnings). It takes the release folder and a file that lists its files,
+# NUL-separated, as find printed them.
 read -r -d '' path_scanner <<'PERL' || true
 use strict;
 use warnings;
-my $root = shift @ARGV;
-defined $root or die "make-release: no folder to check\n";
+my ($root, $listing) = @ARGV;
+defined $listing or die "make-release: no files to check\n";
 my @needles;
 for my $line (split /\n/, $ENV{WGAL_FORBIDDEN_PATHS} // '') {
     my ($label, $path) = split /\t/, $line, 2;
@@ -230,14 +258,30 @@ for my $line (split /\n/, $ENV{WGAL_FORBIDDEN_PATHS} // '') {
     push @needles, [$label, 'UTF-8', $path], [$label, 'UTF-16LE', $utf16];
 }
 @needles or die "make-release: no forbidden paths were given\n";
-my ($files, $hits) = (0, 0);
-sub scan {
-    my ($rel, $path) = @_;
-    open(my $fh, '<:raw', $path) or die "make-release: cannot read $rel\n";
-    my $data = do { local $/; <$fh> };
-    close $fh or die "make-release: cannot read $rel\n";
-    $data = '' unless defined $data;
-    $files++;
+# The whole of a file, or an error: sysread tells a failed read from the end.
+sub slurp {
+    my ($path, $what) = @_;
+    open(my $fh, '<:raw', $path) or die "make-release: cannot open $what\n";
+    my $data = '';
+    while (1) {
+        my $n = sysread($fh, my $chunk, 1 << 20);
+        defined $n or die "make-release: cannot read $what\n";
+        last if $n == 0;
+        $data .= $chunk;
+    }
+    close $fh or die "make-release: cannot read $what\n";
+    return $data;
+}
+my $prefix = "$root/";
+my @paths = sort grep { length } split /\0/, slurp($listing, 'the list of files');
+my $hits = 0;
+for my $path (@paths) {
+    substr($path, 0, length $prefix) eq $prefix
+        or die "make-release: a listed file is outside the release\n";
+    my $rel = substr($path, length $prefix);
+    lstat $path or die "make-release: cannot inspect $rel\n";
+    -f _ && !-l _ or die "make-release: $rel is not a plain file\n";
+    my $data = slurp($path, $rel);
     for my $needle (@needles) {
         my ($label, $encoding, $bytes) = @$needle;
         my ($count, $at) = (0, 0);
@@ -250,44 +294,44 @@ sub scan {
         print "  $rel: the path of the $label, $encoding, $count\n";
     }
 }
-sub walk {
-    my ($rel) = @_;
-    my $dir = $rel eq '' ? $root : "$root/$rel";
-    opendir(my $dh, $dir) or die "make-release: cannot list a folder of the release\n";
-    my @names = sort grep { $_ ne '.' && $_ ne '..' } readdir $dh;
-    closedir $dh or die "make-release: cannot list a folder of the release\n";
-    for my $name (@names) {
-        my $r = $rel eq '' ? $name : "$rel/$name";
-        my $p = "$root/$r";
-        lstat $p or die "make-release: cannot inspect $r\n";
-        if (-l _) {
-            die "make-release: $r is a symbolic link; a release holds only files and folders\n";
-        } elsif (-d _) {
-            walk($r);
-        } elsif (-f _) {
-            scan($r, $p);
-        } else {
-            die "make-release: $r is not a file or a folder\n";
-        }
-    }
-}
-walk('');
 if ($hits) {
     print "make-release: the release names the computer that built it ($hits places); nothing was packed\n";
     exit 1;
 }
-print "Checked $files files: no build paths\n";
+printf "Checked %d files: no build paths\n", scalar @paths;
 PERL
 
 # Searches every file under the folder for the forbidden paths, given as
-# "<label><TAB><path>" lines. Fails on a hit and on any error.
+# "<label><TAB><path>" lines. Fails on a hit, on anything but plain files
+# and folders, and on any error; the messages name no path but files inside
+# the folder.
 scan_release() { # folder forbidden
+    local dir=${1%/} listing odd rc=0 line
     if ! command -v perl >/dev/null 2>&1; then
         echo "make-release.sh: perl is missing; the release cannot be checked, so nothing was packed" >&2
         return 1
     fi
-    local rc=0
-    WGAL_FORBIDDEN_PATHS=$2 perl -e "$path_scanner" -- "$1" || rc=$?
+    if ! listing=$(mktemp 2>/dev/null) || ! odd=$(mktemp 2>/dev/null); then
+        echo "make-release.sh: the release could not be checked (no temporary file); nothing was packed" >&2
+        [ -z "${listing:-}" ] || rm -f -- "$listing"
+        return 1
+    fi
+    if ! find "$dir" -mindepth 1 ! -type f ! -type d -print >"$odd" 2>/dev/null ||
+        ! find "$dir" -type f -print0 >"$listing" 2>/dev/null; then
+        rm -f -- "$listing" "$odd"
+        echo "make-release.sh: the release's files could not be listed; nothing was packed" >&2
+        return 1
+    fi
+    if [ -s "$odd" ]; then
+        while IFS= read -r line; do
+            echo "make-release.sh: ${line#"$dir"/} is a link or another kind of file; a release holds only files and folders" >&2
+        done <"$odd"
+        rm -f -- "$listing" "$odd"
+        echo "make-release.sh: nothing was packed" >&2
+        return 1
+    fi
+    WGAL_FORBIDDEN_PATHS=$2 perl -e "$path_scanner" -- "$dir" "$listing" || rc=$?
+    rm -f -- "$listing" "$odd"
     case "$rc" in
     0) ;;
     1) return 1 ;;
@@ -312,6 +356,13 @@ refuse() { # message
     exit 65
 }
 
+# What git says about the checkout, every change and untracked file
+# included, or a refusal when git fails.
+checkout_state() {
+    git -c core.quotepath=true status --porcelain=v1 --untracked-files=all 2>/dev/null ||
+        refuse "git could not read the checkout"
+}
+
 main() {
 invoked=$PWD
 root=$(cd "$(dirname "$0")/../.." && pwd -P)
@@ -325,12 +376,36 @@ case "${1:-}" in
     ;;
 esac
 
+cd "$root"
+version=$(awk '/^\[workspace.package\]/{p=1; next} /^\[/{p=0} p && /^version *=/{gsub(/[" ]/, "", $0); sub(/version=/, "", $0); print; exit}' Cargo.toml)
+arch=$(uname -m)
+plain_names "$version" "$arch" || refuse "the version or the architecture is not a plain name; nothing was deleted or built"
+if [ -L dist ] || { [ -e dist ] && [ ! -d dist ]; }; then
+    refuse "dist/ is a link or not a folder; nothing was deleted or built"
+fi
+name="wgal-$version-linux-$arch"
+stage="dist/$name"
+archive="dist/$name.tar.gz"
+rm -rf -- "$stage" "$archive"
+work=""
+finished=0
+# Removes what this run made unless it finished: the temporary folder, and
+# the release folder and archive, deleted just above.
+cleanup() {
+    if [ "$finished" -ne 1 ]; then
+        rm -rf -- "$stage" "$archive"
+        if [ -n "$work" ]; then
+            rm -rf -- "$work"
+        fi
+    fi
+}
+trap cleanup EXIT
+
 [ -n "${HOME:-}" ] || refuse "HOME is not set"
 home_dir=$(real_dir "$invoked" "$HOME") || refuse "the home folder does not exist"
 cargo_given=${CARGO_HOME:-$HOME/.cargo}
 cargo_home=$(real_dir "$invoked" "$cargo_given") || refuse "Cargo's home folder was not found (CARGO_HOME, or ~/.cargo)"
-cd "$root"
-top=$(git rev-parse --show-toplevel)
+top=$(git rev-parse --show-toplevel 2>/dev/null) || refuse "git could not read the repository"
 [ "$(real_dir / "$top")" = "$root" ] || refuse "the script is not in the repository it runs in"
 for path in "$root" "$home_dir" "$cargo_home" "$HOME" "$cargo_given"; do
     if has_control "$path"; then
@@ -344,17 +419,13 @@ forbid "Cargo home" "$cargo_home"
 case "$cargo_given" in /?*) forbid "Cargo home" "${cargo_given%/}" ;; esac
 forbid "repository" "$root"
 
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+before=$(checkout_state)
+tracked=$(grep -v '^?? ' <<<"$before" || true)
+if [ -n "$tracked" ]; then
     echo "make-release.sh: the checkout has uncommitted changes; a release is built from a commit" >&2
     exit 65
 fi
-commit=$(git rev-parse HEAD)
-version=$(awk '/^\[workspace.package\]/{p=1; next} /^\[/{p=0} p && /^version *=/{gsub(/[" ]/, "", $0); sub(/version=/, "", $0); print; exit}' Cargo.toml)
-arch=$(uname -m)
-name="wgal-$version-linux-$arch"
-stage="dist/$name"
-archive="dist/$name.tar.gz"
-rm -rf -- "$stage" "$archive"
+commit=$(git rev-parse HEAD 2>/dev/null) || refuse "git could not read the commit"
 
 programs=(target/release/wgal-watchdog target/release/wgal-desktop target/release/wgal-mcp target/release/wgal)
 if [ "$build" -eq 1 ]; then
@@ -371,8 +442,10 @@ if [ "$build" -eq 1 ]; then
     cargo build --release --locked -p wgal-mcp
     cargo build --release --locked -p wgal-cli
     pnpm --filter @wgal/desktop run tauri build --no-bundle -- --locked
-    if [ -n "$(git status --porcelain --untracked-files=no)" ] || [ "$(git rev-parse HEAD)" != "$commit" ]; then
-        refuse "the build changed the checkout (Cargo.lock?); nothing was packed"
+    after=$(checkout_state)
+    now=$(git rev-parse HEAD 2>/dev/null) || refuse "git could not read the commit after the build"
+    if [ "$after" != "$before" ] || [ "$now" != "$commit" ]; then
+        refuse "the build changed the checkout (Cargo.lock, or a new file?); nothing was packed"
     fi
     build_record "$commit" "$version" "${programs[@]}" >"$record"
 elif ! why=$(check_record "$commit" "$version" "${programs[@]}"); then
@@ -382,15 +455,6 @@ fi
 
 mkdir -p dist
 work=$(mktemp -d "dist/.$name.XXXXXX")
-finished=0
-# Removes what this run made unless it finished: the temporary folder,
-# and the release folder and archive, deleted above before the build.
-cleanup() {
-    if [ "$finished" -ne 1 ]; then
-        rm -rf -- "$work" "$stage" "$archive"
-    fi
-}
-trap cleanup EXIT
 temp="$work/$name"
 mkdir "$temp"
 for program in wgal-watchdog wgal-desktop wgal-mcp wgal; do
@@ -416,10 +480,10 @@ scan_release "$temp" "$forbidden" || exit 65
 tar -C "$work" -czf "$work/$name.tar.gz" "$name"
 mv -- "$temp" "$stage"
 mv -- "$work/$name.tar.gz" "$archive"
-finished=1
 rm -rf -- "$work"
 echo "Built $archive"
 sha256sum "$archive"
+finished=1
 }
 
 # Sourced (by the tests) it only defines the functions.
