@@ -6,7 +6,7 @@ The steps to install, check and remove WGAL are in `INSTALL.md`. This file
 says what the scripts do, where the files are and where to look when
 something goes wrong.
 
-> **Status (2026-11-19)**:
+> **Status (2026-11-20)**:
 > - On 2026-11-13 WGAL was built and tested natively on a Mac for the
 >   first time (Apple silicon, macOS 27.2.1): the five commands pass, and
 >   the scripts' stand-in tests ran and pass with macOS's own bash 3.2.
@@ -15,8 +15,12 @@ something goes wrong.
 >   injected after the watchdog stopped) and removed with
 >   `uninstall.sh --remove-data` on that Mac: PASS. That is not "accepted
 >   on a device".
-> - For 4.2.1 only the app bundle was built and its version checked; no
->   4.2.1 release is installed on a Mac yet.
+> - 4.2.1 was built from this repository and installed on that Mac. Its
+>   watchdog could not list the tunnels (`manager_query_failed`):
+>   macOS 27.2.1 writes the service type as `[VPN:com.wireguard.macos]`,
+>   with a colon, and the parser accepted only a slash. 4.2.2 reads both.
+>   The list's format and the status's were read on that Mac without
+>   changing anything; the status already parses.
 > - Two things must be verified on a real Mac as the LaunchAgent, not
 >   just tried in Terminal, and are not done yet (NOT RUN):
 >   - connecting and disconnecting with `scutil --nc`;
