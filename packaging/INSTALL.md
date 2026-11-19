@@ -668,20 +668,24 @@ Once built, install as above.
 
 A release must not name the computer that built it, so each script:
 
+- first deletes this version's release folder and archive in `dist/`
+  (it refuses when `dist/` is a link), so a run that stops leaves neither;
 - refuses to build, and builds nothing, when compiler flags or Cargo's
   output folder are set from outside: `RUSTFLAGS`,
   `CARGO_ENCODED_RUSTFLAGS`, `CARGO_BUILD_RUSTFLAGS`,
   `CARGO_TARGET_<triple>_RUSTFLAGS`, `CARGO_TARGET_DIR`,
   `CARGO_BUILD_TARGET_DIR` or `CARGO_BUILD_TARGET`, or a Cargo
-  configuration file (`.cargo/config.toml` or `.cargo/config` in the
-  repository, in `apps/desktop/src-tauri`, `apps/desktop` or `apps`, in any
-  folder above the repository, or in Cargo's home) that mentions
-  `rustflags` or `target-dir` or has a key named `target`. Unset them, or
-  move the file away, for the build. On Windows it also refuses when any
-  part of the path of the repository, the profile folder or Cargo's home is
-  a link or a junction;
+  configuration file that mentions `rustflags` or `target-dir`, has a key
+  named `target`, or has an escape (`\u`, `\U` or `\x`) that could spell a
+  key. The files looked at are `.cargo/config.toml` and `.cargo/config` in
+  the repository, in `apps/desktop/src-tauri`, `apps/desktop` and `apps`,
+  and in every folder above the repository, and `config.toml` and `config`
+  in Cargo's home itself. Unset the variables, or move the file away, for
+  the build. On Windows it also refuses when any part of the path of the
+  repository, the profile folder or Cargo's home is a link or a junction;
 - builds with Cargo's home and the repository written in the programs as
-  `/cargo` and `/wgal`, and with `Cargo.lock` as committed;
+  `/cargo` and `/wgal`, and with `Cargo.lock` as committed; git must report
+  the same checkout after the build as before, untracked files included;
 - before packing, searches every file of the release, `RELEASE.txt`
   included, for the paths of the home (profile) folder, Cargo's home and
   the repository. If it finds one, or cannot check, it packs nothing and

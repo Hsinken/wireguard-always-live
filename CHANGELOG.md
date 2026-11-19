@@ -23,7 +23,11 @@ SHA-256 of each archive.
   `BROADCAST`, `MULTICAST`, `BLACKHOLE` or `REJECT`, and reads `ping`'s
   exit 1 with `ping: bad interface name` (macOS 27.2.1) as an interface
   that no longer exists. The checks run again on the installed 4.3.0;
-  until they pass, this is not acceptance on a device.
+  until they pass, this is not acceptance on a device. A limit that stays:
+  when the Network Extension stalls while `scutil` still says `Connected`,
+  `ping` may print a `sendto` error WGAL does not know yet; that is read as
+  "the probe is unavailable", not as a failure, so it neither starts
+  automatic recovery nor sends a notification.
 - **Every platform**: the programs no longer name the computer that built
   them. The release scripts build with Cargo's home and the repository
   written as `/cargo` and `/wgal`, refuse compiler flags and output folders
