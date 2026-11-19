@@ -684,12 +684,16 @@ A release must not name the computer that built it, so each script:
   the build. On Windows it also refuses when any part of the path of the
   repository, the profile folder or Cargo's home is a link or a junction;
 - builds with Cargo's home and the repository written in the programs as
-  `/cargo` and `/wgal`, and with `Cargo.lock` as committed; git must report
-  the same checkout after the build as before, untracked files included;
+  `/cargo` and `/wgal`, and with `Cargo.lock` as committed; the checkout
+  must be clean, without untracked files, before and after the build;
 - before packing, searches every file of the release, `RELEASE.txt`
   included, for the paths of the home (profile) folder, Cargo's home and
   the repository. If it finds one, or cannot check, it packs nothing and
-  says which file, which folder and which encoding, never the path.
+  says which file, which folder and which encoding, never the path;
+- unpacks the archive again in its temporary folder before delivering it:
+  it must hold exactly the release's files (the Ubuntu archive with no
+  owner names; the macOS one without extended attributes or resource
+  forks, its app's signature verified), and those are searched again.
 
 ## What the scripts never do
 
