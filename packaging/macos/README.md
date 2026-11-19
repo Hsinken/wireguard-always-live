@@ -20,8 +20,11 @@ something goes wrong.
 >   macOS 27.2.1 writes the service type as `[VPN:com.wireguard.macos]`,
 >   with a colon, and the parser accepted only a slash. 4.2.2 reads both.
 >   The list's format and the status's were read on that Mac without
->   changing anything; a de-identified copy of the real status already
->   parses (a simulation, not the watchdog on the Mac).
+>   changing anything.
+> - 4.2.2 is installed on that Mac (2026-11-20): its watchdog lists both
+>   tunnels and reads a registered tunnel's state as connected. Resolving
+>   the interface and probing through it are not tried yet (no recovery
+>   check target is set).
 > - Two things must be verified on a real Mac as the LaunchAgent, not
 >   just tried in Terminal, and are not done yet (NOT RUN):
 >   - connecting and disconnecting with `scutil --nc`;
