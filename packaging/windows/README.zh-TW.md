@@ -28,7 +28,7 @@ cargo build --release --locked -p wgal-cli
 pnpm tauri build --no-bundle
 ```
 
-`pnpm tauri build` 等於 `pnpm --filter @wgal/desktop run tauri build`，會先執行前端的 `pnpm run build`。四個執行檔都在 workspace 的 `target\release\`：`wgal-watchdog.exe`（背景服務）、`wgal-desktop.exe`（視窗）、`wgal-mcp.exe`（給 Agent 用的 MCP 伺服器，由 Agent 以 stdio 啟動；在視窗的「設定」或以 `wgal mcp on` 開啟 MCP 之前，它的要求一律被背景服務拒絕）與 `wgal.exe`（WGAL 的命令列，3.0.0 起，見下面「命令列 `wgal.exe`」）。`--no-bundle` 不產生 MSI 或 NSIS 安裝檔。GUI 只連線到 LocalSystem 擁有的 pipe（`connect_watchdog_pipe`，`3c7bc97` 起），`wgal-mcp.exe` 與 `wgal.exe` 也一樣。發布壓縮包由 `make-release.ps1` 建置，它以同樣的指令建置這四個執行檔。
+`pnpm tauri build` 等於 `pnpm --filter @wgal/desktop run tauri build`，會先執行前端的 `pnpm run build`。四個執行檔都在 workspace 的 `target\release\`：`wgal-watchdog.exe`（背景服務）、`wgal-desktop.exe`（視窗）、`wgal-mcp.exe`（給 Agent 用的 MCP 伺服器，由 Agent 以 stdio 啟動；在視窗的「設定」或以 `wgal mcp on` 開啟 MCP 之前，它的要求一律被背景服務拒絕）與 `wgal.exe`（WGAL 的命令列，3.0.0 起，見下面「命令列 `wgal.exe`」）。`--no-bundle` 不產生 MSI 或 NSIS 安裝檔。GUI 只連線到 LocalSystem 擁有的 pipe（`connect_watchdog_pipe`，`3c7bc97` 起），`wgal-mcp.exe` 與 `wgal.exe` 也一樣。發布壓縮包由 `make-release.ps1` 建置，它以同樣的指令建置這四個執行檔，另加兩個編譯旗標，讓程式不帶建置電腦的資料夾路徑，並在打包之前檢查每一個檔案（見 `INSTALL.zh-TW.md` 的「從原始碼建置發布包」）。
 
 ## 放到同一個資料夾
 

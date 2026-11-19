@@ -54,7 +54,9 @@ executables are in the workspace's `target\release\`:
 pipe that LocalSystem owns (`connect_watchdog_pipe`, since `3c7bc97`), and
 so do `wgal-mcp.exe` and `wgal.exe`. The release zip is built by
 `make-release.ps1`, which builds these four executables with the same
-commands.
+commands and two compiler flags that keep the build computer's folders out
+of them, and checks every file before zipping (see "Build the release from
+source" in `INSTALL.md`).
 
 ## Put them in one folder
 
