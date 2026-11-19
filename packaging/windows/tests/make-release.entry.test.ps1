@@ -516,7 +516,10 @@ try {
         }
         Check 'in this process: the build passed and the refusal refused' (($outcomes -join ',') -eq 'False,True')
 
-        # A zip that holds more than the release zips nothing.
+        # A zip that holds more than the release, inside the release's folder
+        # or beside it, zips nothing.
+        foreach ($extra in @(@('inside the release''s folder', '{0}/extra.txt'), @('beside the release''s folder', 'extra.txt'))) {
+        $extraName = $extra[1]
         $before = @{}
         $set = @{ USERPROFILE = $profileDir; CARGO_HOME = $null; FAKE_LOG = $log; FAKE_EMBED = $null; PATH = "$bin;$basePath" }
         foreach ($key in @($set.Keys)) {
@@ -532,7 +535,7 @@ try {
                         & $made $Folder $Zip
                         $archive = [IO.Compression.ZipFile]::Open($Zip, 'Update')
                         try {
-                            $entry = $archive.CreateEntry("$(Split-Path $Folder -Leaf)/extra.txt")
+                            $entry = $archive.CreateEntry(($extraName -f (Split-Path $Folder -Leaf)))
                             $writer = New-Object IO.StreamWriter $entry.Open()
                             $writer.Write($work)
                             $writer.Dispose()
@@ -546,13 +549,14 @@ try {
             } catch {
                 $_.Exception.Message
             }
-            Check 'a zip with another file: refused' ($message -like '*the zip holds other files than the release*')
-            Check 'a zip with another file: nothing packed' (& $nothingPacked)
-            Check 'a zip with another file: the path is not printed' (-not $message.Contains($top.TrimEnd('\')))
+            Check "a zip with another file $($extra[0]): refused" ($message -like '*the zip holds other files than the release*')
+            Check "a zip with another file $($extra[0]): nothing packed" (& $nothingPacked)
+            Check "a zip with another file $($extra[0]): the path is not printed" (-not $message.Contains($top.TrimEnd('\')))
         } finally {
             foreach ($key in @($before.Keys)) {
                 [Environment]::SetEnvironmentVariable($key, $before[$key], 'Process')
             }
+        }
         }
 
         # A zip whose file differs from the release's (the same names) zips

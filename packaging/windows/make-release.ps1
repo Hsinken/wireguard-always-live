@@ -410,6 +410,20 @@ function Expand-ReleaseZip([string] $Zip, [string] $Destination) {
     [IO.Compression.ZipFile]::ExtractToDirectory($Zip, $Destination)
 }
 
+# The zip's entry names, as the zip itself lists them, sorted ordinally.
+function Get-ZipEntryNames([string] $Zip) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($Zip)
+    try {
+        $names = [string[]]@($archive.Entries | ForEach-Object { $_.FullName })
+    } finally {
+        $archive.Dispose()
+    }
+    [Array]::Sort($names, [StringComparer]::Ordinal)
+    return $names
+}
+
 # Every file under $Folder, as paths inside it, sorted; throws on a link or
 # a junction.
 function Get-ReleaseFiles([string] $Folder) {
@@ -641,21 +655,28 @@ try {
     }
 
     New-ReleaseZip $temp (Join-Path $work "$name.zip")
-    # The zip as it will be delivered: exactly the release's files, and those
-    # searched again.
+    # The zip as it will be delivered. Its entries as the zip itself lists
+    # them: exactly the release's files, each once, under the release's
+    # folder and nothing beside it. Then the whole of what it unpacks to:
+    # the same files, all of them searched again.
     $check = Join-Path $work 'check'
     try {
+        $released = [string[]]@(Get-ReleaseFiles $temp | ForEach-Object { "$name\$_" })
+        [Array]::Sort($released, [StringComparer]::Ordinal)
+        $wanted = [string[]]@($released | ForEach-Object { $_.Replace('\', '/') })
+        [Array]::Sort($wanted, [StringComparer]::Ordinal)
+        $entries = @(Get-ZipEntryNames (Join-Path $work "$name.zip"))
         Expand-ReleaseZip (Join-Path $work "$name.zip") $check
-        $packedFiles = @(Get-ReleaseFiles $temp) -join "`n"
-        $unpackedFiles = @(Get-ReleaseFiles (Join-Path $check $name)) -join "`n"
+        $unpacked = [string[]]@(Get-ReleaseFiles $check)
+        [Array]::Sort($unpacked, [StringComparer]::Ordinal)
     } catch {
         Stop-Safe "make-release.ps1: the zip could not be checked ($(Get-SafeMessage $_ 'an error')); nothing was packed"
     }
-    if ($packedFiles -cne $unpackedFiles) {
+    if (($entries -join "`n") -cne ($wanted -join "`n") -or ($unpacked -join "`n") -cne ($released -join "`n")) {
         Stop-Safe 'make-release.ps1: the zip holds other files than the release; nothing was packed'
     }
     try {
-        $hits = Find-BuildPaths (Join-Path $check $name) $forbidden
+        $hits = Find-BuildPaths $check $forbidden
     } catch {
         Stop-Safe "make-release.ps1: the zip could not be checked ($(Get-SafeMessage $_ 'an error')); nothing was packed"
     }
