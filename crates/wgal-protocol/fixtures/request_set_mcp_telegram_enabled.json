@@ -1,0 +1,8 @@
+{
+  "protocol_version": 1,
+  "request_id": "req-0021",
+  "request": {
+    "op": "set_mcp_telegram_enabled",
+    "enabled": true
+  }
+}

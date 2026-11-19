@@ -1,0 +1,104 @@
+{
+  "max_tunnels": 16,
+  "max_discovered": 32,
+  "max_observe_targets": 4,
+  "max_event_page": 100,
+  "min_workers": 2,
+  "max_workers": 17,
+  "probe_interval_secs": {
+    "min": 10,
+    "max": 3600
+  },
+  "probe_timeout_secs": {
+    "min": 1,
+    "max": 10
+  },
+  "probe_retries": {
+    "min": 0,
+    "max": 10
+  },
+  "probe_min_fault_secs": {
+    "min": 0,
+    "max": 3600
+  },
+  "default_probe_timing": {
+    "interval_secs": 15,
+    "timeout_secs": 2,
+    "retries": 2,
+    "min_fault_secs": 60
+  },
+  "recovery_retry_limit": {
+    "min": 0,
+    "max": 3600
+  },
+  "recovery_retry_interval_secs": {
+    "min": 10,
+    "max": 10800
+  },
+  "default_recovery_retry": {
+    "limit": 100,
+    "interval_secs": 60
+  },
+  "min_gui_version": "4.2.1",
+  "min_usable_gui_version": "4.2.1",
+  "template_placeholders": {
+    "formal": [
+      "device",
+      "tunnel",
+      "incident",
+      "time_zone",
+      "started_at",
+      "result",
+      "retry"
+    ],
+    "result_failed": [],
+    "result_not_executed": [],
+    "retry_limited": [
+      "interval",
+      "limit"
+    ],
+    "retry_forever": [
+      "interval"
+    ],
+    "retry_none": [],
+    "exhausted": [
+      "device",
+      "tunnel",
+      "incident",
+      "time_zone",
+      "started_at",
+      "retries"
+    ],
+    "recovered": [
+      "device",
+      "tunnel",
+      "incident",
+      "time_zone",
+      "started_at",
+      "recovered_at"
+    ],
+    "test": [
+      "device",
+      "time_zone",
+      "time"
+    ],
+    "unnamed_device": []
+  },
+  "bot_id_digits": {
+    "min": 3,
+    "max": 15
+  },
+  "bot_secret_chars": {
+    "min": 30,
+    "max": 40
+  },
+  "chat_id_digits": {
+    "min": 1,
+    "max": 19
+  },
+  "chat_username_chars": {
+    "min": 1,
+    "max": 37
+  },
+  "device_name_max_chars": 64
+}

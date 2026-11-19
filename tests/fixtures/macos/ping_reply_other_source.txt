@@ -1,0 +1,6 @@
+PING 192.0.2.1 (192.0.2.1): 56 data bytes
+64 bytes from 198.51.100.7: icmp_seq=0 ttl=63 time=12.345 ms
+
+--- 192.0.2.1 ping statistics ---
+1 packets transmitted, 1 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 12.345/12.345/12.345/0.000 ms

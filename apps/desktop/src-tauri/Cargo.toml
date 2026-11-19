@@ -1,0 +1,49 @@
+[package]
+name = "wgal-desktop"
+description = "WGAL desktop GUI shell (Tauri 2). Renders watchdog state; never controls tunnels itself."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+# The tray / menu bar item (plan §8).
+tauri = { workspace = true, features = ["tray-icon"] }
+wgal-protocol.workspace = true
+serde.workspace = true
+# Reads the compiled-in language files for the tray's words (src/lang.rs).
+serde_json.workspace = true
+# The languages the system prefers, for the window's "follow the system"
+# choice (src/lang.rs).
+sys-locale.workspace = true
+# One-click MCP client setup (src/mcpclients.rs): edits the `wgal` entry of
+# a tool's user-level MCP settings in place, JSON and TOML.
+jsonc-parser.workspace = true
+toml_edit.workspace = true
+
+# Only for `windows::connect_watchdog_pipe` (with `is_not_the_watchdog`), which
+# refuses a pipe LocalSystem does not own before anything is sent, its Linux
+# and macOS counterparts `linux::socket::connect_watchdog_socket` and
+# `macos::socket::connect_watchdog_socket` (with `socket::is_not_the_watchdog`),
+# each OS's `final_path_of_file` (`windows::`, `linux::`, `macos::`), with
+# which the log export and the MCP client setup check where a file really is,
+# and on Windows `windows::link_count` for that setup's hard-link check; the
+# GUI calls nothing else from it.
+[target.'cfg(any(windows, target_os = "linux", target_os = "macos"))'.dependencies]
+wgal-platform.workspace = true
+
+# Only the `O_NOFOLLOW` and `O_DIRECTORY` flags with which the log export
+# opens its folder as itself; no calls.
+[target.'cfg(unix)'.dependencies]
+libc.workspace = true
+
+# The export tests' directory links on Windows (see the workspace manifest).
+[target.'cfg(windows)'.dev-dependencies]
+junction.workspace = true
+
+[lints]
+workspace = true

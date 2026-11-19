@@ -1,0 +1,22 @@
+[package]
+name = "wgal-client"
+description = "The way to the WGAL watchdog that wgal-mcp and the wgal command line share: one connection per request, with a deadline."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+wgal-protocol.workspace = true
+
+# Only for `windows::connect_watchdog_pipe` (with `is_not_the_watchdog`),
+# which refuses a pipe LocalSystem does not own before anything is sent, the
+# socket connects on Linux and macOS (with `socket::is_not_the_watchdog`),
+# and, for where the logs are, `windows::program_data_dir` and
+# `macos::socket::{home_dir, data_dir}`; nothing else.
+[target.'cfg(any(windows, target_os = "linux", target_os = "macos"))'.dependencies]
+wgal-platform.workspace = true
+
+[lints]
+workspace = true

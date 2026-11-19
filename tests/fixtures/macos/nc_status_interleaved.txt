@@ -1,0 +1,12 @@
+Connected
+Extended Status <dictionary> {
+  IPv4 : <dictionary> {
+    Addresses : <array> {
+Connected
+      0 : 192.0.2.10
+    }
+    InterfaceName : utun4
+Extended Status <dictionary> {
+  }
+  Status : 2
+}

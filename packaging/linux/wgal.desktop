@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=WG Always Live
+Comment=Checks that the official WireGuard tunnels really carry traffic
+Exec=/opt/wgal/wgal-desktop
+Icon=/opt/wgal/wgal.png
+Terminal=false
+Categories=Network;
+StartupNotify=false

@@ -1,0 +1,8 @@
+{
+  "protocol_version": 1,
+  "request_id": "req-0007",
+  "request": {
+    "op": "set_bot_token",
+    "token": "123456789:EXAMPLE-not-a-real-token_0000000000"
+  }
+}

@@ -1,0 +1,1 @@
+ping: SO_BINDTODEVICE wg-office: No such device

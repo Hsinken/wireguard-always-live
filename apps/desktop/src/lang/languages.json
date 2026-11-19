@@ -1,0 +1,18 @@
+{
+  "fallback": "en",
+  "languages": [
+    { "tag": "zh-TW", "system": ["zh-TW", "zh-HK", "zh-MO", "zh-Hant"] },
+    { "tag": "en", "system": ["en"] },
+    { "tag": "zh-CN", "system": ["zh", "zh-CN", "zh-SG", "zh-Hans"] },
+    { "tag": "ja", "system": ["ja"] },
+    { "tag": "ko", "system": ["ko"] },
+    { "tag": "de", "system": ["de"] },
+    { "tag": "es", "system": ["es"] },
+    { "tag": "pt-BR", "system": ["pt"] },
+    { "tag": "tr", "system": ["tr"] },
+    { "tag": "fr", "system": ["fr"] },
+    { "tag": "ru", "system": ["ru"] },
+    { "tag": "id", "system": ["id", "in"] },
+    { "tag": "vi", "system": ["vi"] }
+  ]
+}

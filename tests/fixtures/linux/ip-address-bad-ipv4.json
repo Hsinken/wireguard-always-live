@@ -1,0 +1,1 @@
+[{"ifindex":7,"ifname":"wg-office","flags":["POINTOPOINT","NOARP","UP","LOWER_UP"],"mtu":1420,"qdisc":"noqueue","operstate":"UNKNOWN","group":"default","txqlen":1000,"link_type":"none","addr_info":[{"family":"inet","local":"192.0.2.300","prefixlen":32,"scope":"global","label":"wg-office","valid_life_time":4294967295,"preferred_life_time":4294967295}]}]

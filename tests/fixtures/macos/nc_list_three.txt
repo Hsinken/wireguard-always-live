@@ -1,0 +1,4 @@
+Available network connection services in the current set (*=enabled):
+* (Connected)      00000000-0000-4000-8000-0000000000B1 VPN (com.wireguard.macos) "Office"                         [VPN/com.wireguard.macos]
+* (Disconnected)   00000000-0000-4000-8000-0000000000B2 VPN (com.wireguard.macos) "Lab 2"                          [VPN/com.wireguard.macos]
+* (Connecting)     00000000-0000-4000-8000-0000000000B3 VPN (com.wireguard.macos) "Home"                           [VPN/com.wireguard.macos]

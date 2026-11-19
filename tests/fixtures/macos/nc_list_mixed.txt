@@ -1,0 +1,6 @@
+Available network connection services in the current set (*=enabled):
+* (Connected)      00000000-0000-4000-8000-0000000000B1 VPN (com.wireguard.macos) "Office"                         [VPN/com.wireguard.macos]
+  (Disconnected)   00000000-0000-4000-8000-0000000000B4 VPN (com.wireguard.macos) "Spare"                          [VPN/com.wireguard.macos]
+* (Disconnected)   00000000-0000-4000-8000-0000000000C1 PPP --> L2TP       "Corporate L2TP"                 [PPP/L2TP]
+* (Disconnected)   00000000-0000-4000-8000-0000000000C2 IPSec              "Legacy IPsec"                   [IPSec]
+* (Disconnected)   00000000-0000-4000-8000-0000000000C3 VPN (com.example.vpn) "Other app"                      [VPN/com.example.vpn]

@@ -1,0 +1,57 @@
+[package]
+name = "wgal-platform"
+description = "Adapters for the official WireGuard managers: Windows SCM, macOS scutil, Ubuntu systemd."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+wgal-core.workspace = true
+wgal-protocol.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_NetworkManagement_Ndis",
+    "Win32_Networking_WinSock",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com",
+    "Win32_System_Console",
+    "Win32_System_IO",
+    "Win32_System_Pipes",
+    "Win32_System_Services",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+] }
+
+# `macos::final_path_of_file`: `fcntl(F_GETPATH)` without `unsafe` here.
+[target.'cfg(target_os = "macos")'.dependencies]
+rustix.workspace = true
+# getpeereid for the watchdog socket's peer (macos/socket.rs).
+nix.workspace = true
+# `terminal`: the terminal's echo is put back on an interrupt.
+signal-hook.workspace = true
+
+# SO_PEERCRED and the user IDs for the watchdog socket (linux/socket.rs).
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix.workspace = true
+# `terminal`: the terminal's echo is put back on an interrupt.
+signal-hook.workspace = true
+
+[dev-dependencies]
+wgal-testkit.workspace = true
+
+# `terminal`'s tests run on a pseudo-terminal of their own.
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dev-dependencies]
+rustix = { workspace = true, features = ["pty"] }
+
+[lints]
+workspace = true

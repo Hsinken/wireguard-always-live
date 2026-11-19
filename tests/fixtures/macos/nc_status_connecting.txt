@@ -1,0 +1,7 @@
+Connecting
+Extended Status <dictionary> {
+  Status : 1
+  VPN : <dictionary> {
+    Status : 1
+  }
+}

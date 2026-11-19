@@ -1,0 +1,5 @@
+wg-quick@a\x3db.service loaded inactive dead WireGuard via wg-quick(8) for a=b
+● wg-quick@wg-home.service loaded failed failed WireGuard via wg-quick(8) for wg/home
+wg-quick@wg-lab.service loaded inactive dead WireGuard via wg-quick(8) for wg/lab
+wg-quick@wg-office.service loaded active exited WireGuard via wg-quick(8) for wg/office
+wg-quick@wg-old.service not-found inactive dead wg-quick@wg-old.service

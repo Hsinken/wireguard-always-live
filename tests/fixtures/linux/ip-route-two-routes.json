@@ -1,0 +1,1 @@
+[{"dst":"192.0.2.1","dev":"wg-office","prefsrc":"192.0.2.11","flags":[],"uid":0,"cache":[]},{"dst":"192.0.2.1","dev":"wg-lab","prefsrc":"198.51.100.21","flags":[],"uid":0,"cache":[]}]

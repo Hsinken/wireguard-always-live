@@ -1,0 +1,109 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/wgal-protocol",
+    "crates/wgal-core",
+    "crates/wgal-platform",
+    "crates/wgal-runtime",
+    "crates/wgal-testkit",
+    "crates/wgal-client",
+    "crates/wgal-cli",
+    "crates/wgal-mcp",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+version = "4.2.1"
+edition = "2024"
+rust-version = "1.99.1"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+wgal-protocol = { path = "crates/wgal-protocol" }
+wgal-core = { path = "crates/wgal-core" }
+wgal-platform = { path = "crates/wgal-platform" }
+wgal-runtime = { path = "crates/wgal-runtime" }
+wgal-testkit = { path = "crates/wgal-testkit" }
+wgal-client = { path = "crates/wgal-client" }
+
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+# The serde attributes ts-rs skips (deny_unknown_fields, try_from/into) only
+# affect deserialization, not the generated TypeScript shape.
+ts-rs = { version = "12.0.1", features = ["no-serde-warnings"] }
+
+# Keep the tauri crates on the same minor line as @tauri-apps/api and @tauri-apps/cli.
+tauri = "=2.12.4"
+tauri-build = "=2.7.3"
+
+# Already in the lockfile through Tauri; wgal-platform enables the Win32
+# features its Windows adapter needs.
+windows-sys = "0.61.2"
+libc = "0.2.191"
+# Safe POSIX calls, so no `unsafe` is needed outside windows/sys.rs:
+# wgal-platform's macOS `final_path_of_file` (`fcntl(F_GETPATH)`, `fs`), the
+# user IDs of the watchdog and its socket peers on Linux and macOS
+# (`process`: getuid, geteuid) and, on Linux, a socket peer's credentials
+# (`net`: SO_PEERCRED), which std offers only unstably; and the terminal's
+# echo while `wgal` reads the Bot Token (`termios`, owner decision of
+# 2026-11-18).
+rustix = { version = "1.1.6", default-features = false, features = ["std", "fs", "net", "process", "termios"] }
+# A socket peer's user on macOS (getpeereid), which rustix does not offer;
+# only the `socket` and `user` features getpeereid needs, nothing else of nix.
+nix = { version = "0.31.3", default-features = false, features = ["socket", "user"] }
+# The computer's host name, which Telegram messages give when no device
+# name is set (owner decision of 2026-11-19): gethostname(2) on Linux and
+# macOS, GetComputerNameExW (the DNS host name) on Windows, so no `unsafe`
+# of ours. Its rustix and windows-link are already in the lockfile.
+gethostname = "1.1.0"
+# SIGTERM and SIGINT for the watchdog on Linux and macOS, so systemd and
+# launchd stop it cleanly; its safe iterator API only. Pinned below 0.4.6,
+# which was younger than 7 days when added (2026-11-05).
+signal-hook = { version = "0.4.5", default-features = false, features = ["iterator"] }
+# Test-only: wgal-mcp checks that the patterns its tool schemas advertise
+# accept what its tools accept. Already in the lockfile through Tauri.
+regex = "1.13.1"
+# Test-only: NTFS junctions for the desktop export's link tests on Windows,
+# which any user may make, so they need no symlink privilege and no shell
+# (AGENTS.md rule 8). On the same windows-sys line.
+junction = "2.1.0"
+# The desktop's one-click MCP client setup (owner request of 2026-11-12):
+# edits one entry of a tool's JSON settings in place, keeping the user's
+# other entries, order, formatting and (where a tool allows them) comments.
+# Its concrete syntax tree only (`cst`); MIT, no dependencies.
+jsonc-parser = { version = "0.34.0", default-features = false, features = ["cst"] }
+# The same for Codex's TOML settings. Already in the lockfile through Tauri.
+toml_edit = { version = "0.25.17", default-features = false, features = ["parse", "display"] }
+
+# Telegram Bot API client for WGW-001-G: blocking, rustls with the Mozilla
+# root store, no gzip, cookies or proxy settings of its own. The notification
+# code turns redirects, retries and connection reuse off and never formats
+# its errors (they can carry the request URL, which holds the bot token).
+ureq = { version = "3.5.0", default-features = false, features = ["rustls"] }
+# macOS Keychain for the bot token (WGW-001-G).
+security-framework = "3.7.0"
+# The Windows service entry point (dispatcher, control handler, status
+# reports) for WGW-001-D, from Mullvad; on the same windows-sys line.
+windows-service = "0.8.1"
+# Time zones for WGW-001-E: Telegram message and log times in the configured
+# zone. Default features: the system's own zone, and the tz database from
+# /usr/share/zoneinfo on Unix or a bundled copy on Windows. Already in the
+# lockfile as an optional dependency of serde_with.
+jiff = "0.2.38"
+# The system's preferred languages for the desktop window's "follow the
+# system" language (owner request of 2026-11-05), from 1Password: Windows
+# GetUserPreferredUILanguages, macOS CFLocaleCopyPreferredLanguages, the
+# locale environment on Linux. No dependencies on those platforms; its
+# `unsafe` stays in the crate, so wgal-desktop needs none.
+sys-locale = "0.3.2"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+undocumented_unsafe_blocks = "deny"
+unwrap_used = "warn"

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WG Always Live</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <!-- Every word on this page comes from the language files (src/lang/):
+         `data-i18n` names the key of an element's text and
+         `data-i18n-<attribute>` the key of an attribute's; `relabel` in
+         dom.ts fills them at startup and when the language changes. Text
+         that changes with the state is written by main.ts. -->
+    <!-- Stays in view while a tab scrolls (styles.css): the watchdog's state,
+         the whole list in one line, and the tabs. -->
+    <header>
+      <div class="bar">
+        <h1>WG Always Live</h1>
+        <p id="link" class="link"></p>
+      </div>
+      <p id="summary" class="summary-line" role="status" aria-live="polite"></p>
+      <!-- Only while one side is older than the other needs (about.ts); a
+           different but new enough version is normal and shows nothing. -->
+      <div id="compat-warning" class="compat-warning" hidden>
+        <p id="compat-warning-text" role="status"></p>
+        <button id="compat-warning-about" type="button" data-i18n="page.compat_about"></button>
+      </div>
+      <div class="tabs" role="tablist" data-i18n-aria-label="page.tabs_label">
+        <button id="tab-tunnels" type="button" role="tab" aria-controls="panel-tunnels" data-i18n="tabs.tunnels"></button>
+        <button id="tab-log" type="button" role="tab" aria-controls="panel-log" data-i18n="tabs.log"></button>
+        <button id="tab-notify" type="button" role="tab" aria-controls="panel-notify" data-i18n="tabs.notify"></button>
+        <button id="tab-settings" type="button" role="tab" aria-controls="panel-settings" data-i18n="tabs.settings"></button>
+        <button id="tab-mcp" type="button" role="tab" aria-controls="panel-mcp" data-i18n="tabs.mcp"></button>
+        <button id="tab-about" type="button" role="tab" aria-controls="panel-about" data-i18n="tabs.about"></button>
+      </div>
+    </header>
+
+    <main>
+      <div class="content">
+        <div id="overlay" class="overlay" role="alert" hidden></div>
+        <div id="banner" class="banner" hidden>
+          <p id="banner-text" role="status"></p>
+          <button id="banner-resume" type="button" hidden data-i18n="page.resume_all"></button>
+        </div>
+
+        <section id="panel-tunnels" class="panel" role="tabpanel" aria-labelledby="tab-tunnels">
+          <h2 id="tunnels-title" class="sr-only" tabindex="-1" data-i18n="tabs.tunnels"></h2>
+          <div class="panel-bar">
+            <p class="hint" data-i18n="tunnels.hint"></p>
+            <button id="discover" type="button" data-i18n="tunnels.discover"></button>
+          </div>
+          <p id="tunnels-empty" class="empty" hidden data-i18n="tunnels.empty"></p>
+          <ul id="tunnels" class="cards"></ul>
+
+          <section id="add" class="group" aria-labelledby="discovered-title" hidden>
+            <h2 id="discovered-title" tabindex="-1" data-i18n="tunnels.add_title"></h2>
+            <p class="hint" data-i18n="tunnels.add_hint"></p>
+            <p class="hint" data-i18n="tunnels.add_access_hint"></p>
+            <p id="discovered-note" class="hint" hidden></p>
+            <ul id="discovered" class="discovered"></ul>
+          </section>
+        </section>
+
+        <section id="panel-log" class="panel" role="tabpanel" aria-labelledby="tab-log" hidden>
+          <h2 class="sr-only" data-i18n="tabs.log"></h2>
+          <div class="panel-bar">
+            <label class="inline-field"
+              ><span data-i18n="log.filter_label"></span>
+              <select id="log-filter"></select>
+            </label>
+            <button id="log-refresh" type="button" data-i18n="log.refresh"></button>
+          </div>
+          <p id="log-hint" class="hint"></p>
+          <div class="panel-bar export-bar">
+            <button id="log-export" type="button" aria-describedby="log-export-note" data-i18n="export.button"></button>
+            <label class="check"
+              ><input id="log-export-names" type="checkbox" /><span data-i18n="export.include_names"></span
+            ></label>
+            <p id="log-export-note" class="hint" data-i18n="export.note"></p>
+            <div id="log-export-state" class="form-status" role="status"></div>
+          </div>
+          <p id="log-watch-note" class="hint" hidden></p>
+          <div id="log-state" class="log-state" role="status"></div>
+          <ol id="log" class="log"></ol>
+          <p class="log-foot">
+            <span id="log-count" class="hint"></span>
+            <button id="log-more" type="button" hidden data-i18n="log.more"></button>
+            <span id="log-end" class="hint" hidden data-i18n="log.end"></span>
+          </p>
+        </section>
+
+        <section id="panel-notify" class="panel" role="tabpanel" aria-labelledby="tab-notify" hidden>
+          <h2 class="sr-only" data-i18n="notify.title"></h2>
+          <p class="hint" data-i18n="notify.hint"></p>
+          <form id="notify-form" class="group form-grid">
+            <h3 class="span-all" data-i18n="notify.settings_title"></h3>
+            <div class="span-all check-field">
+              <label class="check"
+                ><input id="notify-enabled" type="checkbox" aria-describedby="notify-enabled-note" /><span
+                  data-i18n="notify.enabled"
+                ></span
+              ></label>
+              <span id="notify-enabled-note" class="note" data-i18n="notify.enabled_note"></span>
+              <span class="note" data-i18n="notify.recovered_note"></span>
+            </div>
+            <div class="field">
+              <label for="notify-device" data-i18n="notify.device"></label>
+              <input id="notify-device" autocomplete="off" aria-describedby="notify-device-note" />
+              <span id="notify-device-note" class="note" data-i18n="notify.device_note"></span>
+            </div>
+            <div class="field">
+              <label for="notify-chat" data-i18n="notify.chat"></label>
+              <input id="notify-chat" inputmode="text" autocomplete="off" spellcheck="false" aria-describedby="notify-chat-note" />
+              <span id="notify-chat-note" class="note" data-i18n="notify.chat_note"></span>
+            </div>
+            <div class="button-row span-all">
+              <button type="submit" class="primary" data-i18n="notify.save"></button>
+            </div>
+          </form>
+          <form id="token-form" class="group form-grid">
+            <h3 class="span-all" data-i18n="notify.token_title"></h3>
+            <div class="field span-all">
+              <label for="notify-token" data-i18n="notify.token_label"></label>
+              <input
+                id="notify-token"
+                type="password"
+                autocomplete="off"
+                spellcheck="false"
+                aria-describedby="notify-token-state notify-token-note"
+              />
+              <span id="notify-token-state" class="current"></span>
+              <span id="notify-token-note" class="note" data-i18n="notify.token_note"></span>
+            </div>
+            <div id="token-buttons" class="button-row span-all">
+              <button type="submit" class="primary" data-i18n="notify.token_save"></button>
+              <button id="token-clear" type="button" data-i18n="notify.token_clear"></button>
+            </div>
+            <!-- Clearing the token asks first (owner request of 2026-11-06). -->
+            <div id="token-clear-confirm" class="button-row span-all" role="group" aria-labelledby="token-clear-question" hidden>
+              <span id="token-clear-question" class="note" data-i18n="notify.token_clear_question"></span>
+              <button id="token-clear-yes" type="button" class="danger" data-i18n="notify.token_clear_confirm"></button>
+              <button id="token-clear-no" type="button" data-i18n="common.cancel"></button>
+            </div>
+          </form>
+          <section class="group" aria-labelledby="notify-test-title">
+            <h3 id="notify-test-title" data-i18n="notify.test_title"></h3>
+            <div class="button-row">
+              <button id="notify-test" type="button" data-i18n="notify.test_send"></button>
+            </div>
+            <p id="notify-test-state" class="current" role="status" aria-live="polite"></p>
+            <p id="notify-failure" class="warning" role="status"></p>
+          </section>
+          <!-- The texts the watchdog writes messages with, from this window's
+               language file (templates.ts); it fills them in when it sends. -->
+          <section class="group" aria-labelledby="notify-templates-title">
+            <h3 id="notify-templates-title" data-i18n="notify.templates_title"></h3>
+            <div id="templates-state" class="current" role="status"></div>
+            <div id="templates-foreign" class="button-row" hidden>
+              <button id="templates-use-ours" type="button" data-i18n="notify.templates_use_ours"></button>
+            </div>
+            <p class="hint" data-i18n="notify.templates_hint"></p>
+            <div class="previews">
+              <figure class="preview">
+                <figcaption data-i18n="notify.preview_formal"></figcaption>
+                <pre id="preview-formal"></pre>
+              </figure>
+              <figure class="preview">
+                <figcaption data-i18n="notify.preview_exhausted"></figcaption>
+                <pre id="preview-exhausted"></pre>
+              </figure>
+              <figure class="preview">
+                <figcaption data-i18n="notify.preview_recovered"></figcaption>
+                <pre id="preview-recovered"></pre>
+              </figure>
+              <figure class="preview">
+                <figcaption data-i18n="notify.preview_test"></figcaption>
+                <pre id="preview-test"></pre>
+              </figure>
+            </div>
+            <p class="hint" data-i18n="notify.preview_note"></p>
+          </section>
+        </section>
+
+        <section id="panel-settings" class="panel" role="tabpanel" aria-labelledby="tab-settings" hidden>
+          <h2 class="sr-only" data-i18n="tabs.settings"></h2>
+          <section class="group" aria-labelledby="pause-title">
+            <h3 id="pause-title" data-i18n="settings.pause_title"></h3>
+            <p id="pause-state" class="current"></p>
+            <div class="button-row">
+              <button id="pause" type="button" data-i18n="settings.pause_all"></button>
+            </div>
+            <p class="hint" data-i18n="settings.pause_hint"></p>
+          </section>
+          <form id="host-form" class="group">
+            <h3 data-i18n="settings.workers_title"></h3>
+            <div class="choices" role="radiogroup" data-i18n-aria-label="settings.workers_title">
+              <label class="choice"
+                ><input id="workers-auto" type="radio" name="workers" value="auto" /><span
+                  id="workers-auto-label"
+                  data-i18n="settings.workers_auto"
+                ></span
+              ></label>
+              <label class="choice"
+                ><input id="workers-manual" type="radio" name="workers" value="manual" /><span
+                  data-i18n="common.manual"
+                ></span
+              ></label>
+              <label id="workers-count-field" class="inline-field"
+                ><span data-i18n="settings.workers_count"></span>
+                <input id="workers-count" type="number" inputmode="numeric" step="1" aria-describedby="workers-note"
+              /></label>
+            </div>
+            <dl id="workers-facts" class="stats"></dl>
+            <p id="workers-note" class="hint" data-i18n="settings.workers_hint"></p>
+
+            <h3 data-i18n="settings.zone_title"></h3>
+            <div class="choices" role="radiogroup" data-i18n-aria-label="settings.zone_title">
+              <label class="choice"
+                ><input id="zone-follow" type="radio" name="zone" value="follow" /><span
+                  id="zone-follow-label"
+                  data-i18n="settings.zone_follow"
+                ></span
+              ></label>
+              <label class="choice"
+                ><input id="zone-pick" type="radio" name="zone" value="pick" /><span data-i18n="common.manual"></span
+              ></label>
+              <label id="zone-name-field" class="inline-field"
+                ><span data-i18n="settings.zone_name"></span>
+                <input
+                  id="zone-name"
+                  list="zone-list"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Asia/Taipei"
+                  aria-describedby="zone-current"
+              /></label>
+              <datalist id="zone-list"></datalist>
+            </div>
+            <p id="zone-current" class="current"></p>
+            <p class="hint" data-i18n="settings.zone_hint"></p>
+
+            <div class="button-row">
+              <button type="submit" class="primary" data-i18n="common.save_settings"></button>
+              <button id="host-reset" type="button" data-i18n="common.reset"></button>
+            </div>
+            <div id="host-status" class="form-status" role="status"></div>
+          </form>
+          <form id="ui-form" class="group">
+            <h3 data-i18n="settings.ui_title"></h3>
+            <!-- Applied when chosen, not with the form's save button. -->
+            <label class="inline-field"
+              ><span data-i18n="settings.language"></span>
+              <select id="language" aria-describedby="language-note language-status"></select>
+            </label>
+            <p id="language-note" class="hint" data-i18n="settings.language_note"></p>
+            <p id="language-status" class="form-status" role="status"></p>
+            <label class="inline-field"
+              ><span id="refresh-label" data-i18n="settings.refresh_label"></span>
+              <input
+                id="refresh-secs"
+                type="number"
+                inputmode="numeric"
+                min="3"
+                max="300"
+                step="1"
+                aria-describedby="refresh-current refresh-note"
+            /></label>
+            <p id="refresh-current" class="current"></p>
+            <p id="refresh-note" class="hint" data-i18n="settings.refresh_note"></p>
+            <div class="button-row">
+              <button type="submit" class="primary" data-i18n="settings.ui_save"></button>
+              <button id="refresh-default" type="button" data-i18n="settings.refresh_default"></button>
+            </div>
+            <p id="refresh-status" class="form-status" role="status"></p>
+          </form>
+          <!-- The settings file (owner decision of 2026-11-04): the watchdog
+               builds and applies it; this window only picks the file. -->
+          <section class="group" aria-labelledby="settings-file-title">
+            <h3 id="settings-file-title" data-i18n="settings_file.title"></h3>
+            <p class="hint" data-i18n="settings_file.hint"></p>
+            <div class="button-row">
+              <button id="settings-export" type="button" data-i18n="settings_file.export"></button>
+              <button id="settings-import" type="button" data-i18n="settings_file.import"></button>
+              <input id="settings-file" type="file" accept=".json,application/json" hidden />
+            </div>
+            <p id="settings-file-status" class="form-status" role="status"></p>
+            <div id="import-panel" hidden>
+              <p id="import-about" class="current"></p>
+              <label class="inline-field"
+                ><span data-i18n="settings_file.match_label"></span>
+                <select id="import-match">
+                  <option value="name" data-i18n="settings_file.match_name"></option>
+                  <option value="id" data-i18n="settings_file.match_id"></option>
+                </select>
+              </label>
+              <p class="hint" data-i18n="settings_file.match_hint"></p>
+              <label class="switch"
+                ><input id="import-register" type="checkbox" /><span data-i18n="settings_file.register_missing"></span
+              ></label>
+              <label class="switch"
+                ><input id="import-monitor" type="checkbox" /><span data-i18n="settings_file.monitor_new"></span
+              ></label>
+              <ul id="import-results" class="import-results" aria-live="polite"></ul>
+              <div class="button-row">
+                <button id="import-apply" type="button" class="primary" data-i18n="settings_file.apply"></button>
+                <button id="import-cancel" type="button" data-i18n="settings_file.cancel"></button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- MCP on its own tab (owner request of 2026-11-12). -->
+        <section id="panel-mcp" class="panel" role="tabpanel" aria-labelledby="tab-mcp" hidden>
+          <h2 class="sr-only" data-i18n="tabs.mcp"></h2>
+          <!-- Agents through wgal-mcp (owner decision of 2026-11-04): off by
+               default; only this window turns it on. -->
+          <section class="group" aria-labelledby="mcp-title">
+            <h3 id="mcp-title" data-i18n="mcp.title"></h3>
+            <p id="mcp-state" class="current"></p>
+            <p id="mcp-version" class="current"></p>
+            <div class="button-row">
+              <button id="mcp-toggle" type="button" data-i18n="mcp.turn_on"></button>
+            </div>
+            <p class="hint" data-i18n="mcp.hint"></p>
+            <!-- Agents and Telegram (owner decision of 2026-11-06): off by
+                 default; only this window allows it; kept, without effect,
+                 while MCP is off. -->
+            <h4 id="mcp-telegram-title" data-i18n="mcp.telegram_title"></h4>
+            <p id="mcp-telegram-state" class="current"></p>
+            <div class="button-row">
+              <button id="mcp-telegram-toggle" type="button" data-i18n="mcp.telegram_allow"></button>
+            </div>
+            <p class="hint" data-i18n="mcp.telegram_hint"></p>
+            <p class="hint" data-i18n="mcp.setup"></p>
+            <pre class="mcp-config" id="mcp-config"></pre>
+            <!-- One-click MCP client setup (owner requests of 2026-11-12):
+                 the shell adds or removes only the wgal entry of the picked
+                 tool's settings, after the user confirms; "check" reads the
+                 settings again. -->
+            <h4 id="mcp-clients-title" data-i18n="mcp.clients_title"></h4>
+            <div id="mcp-client-buttons" class="button-row">
+              <select id="mcp-client" data-i18n-aria-label="mcp.clients_pick"></select>
+              <button id="mcp-client-set-up" type="button" data-i18n="mcp.clients_set_up"></button>
+              <button id="mcp-client-remove" type="button" data-i18n="mcp.clients_remove"></button>
+              <button id="mcp-client-check" type="button" data-i18n="mcp.clients_check"></button>
+            </div>
+            <div id="mcp-client-confirm" class="button-row" role="group" aria-labelledby="mcp-client-question" hidden>
+              <span id="mcp-client-question" class="note"></span>
+              <button id="mcp-client-yes" type="button" class="danger"></button>
+              <button id="mcp-client-no" type="button" data-i18n="common.cancel"></button>
+            </div>
+            <p id="mcp-client-state" class="current"></p>
+            <details>
+              <summary data-i18n="mcp.clients_preview"></summary>
+              <pre class="mcp-config" id="mcp-client-preview"></pre>
+            </details>
+            <p class="hint" data-i18n="mcp.clients_hint"></p>
+          </section>
+        </section>
+
+        <section id="panel-about" class="panel" role="tabpanel" aria-labelledby="tab-about" hidden>
+          <h2 class="sr-only" data-i18n="tabs.about"></h2>
+          <section class="group" aria-labelledby="about-title">
+            <h3 id="about-title">WG Always Live</h3>
+            <p data-i18n="about.description"></p>
+            <dl id="about-facts" class="about-facts"></dl>
+            <div id="about-compat" class="compat-verdict" role="status"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+    </footer>
+
+    <dialog id="confirm-external" aria-labelledby="confirm-external-title">
+      <h2 id="confirm-external-title" data-i18n="dialog.external_title"></h2>
+      <p id="confirm-external-tunnel"></p>
+      <p data-i18n="dialog.external_body"></p>
+      <p class="button-row">
+        <button id="confirm-external-yes" type="button" data-i18n="dialog.external_yes"></button>
+        <button id="confirm-external-no" type="button" autofocus data-i18n="common.cancel"></button>
+      </p>
+    </dialog>
+
+    <dialog id="confirm-remove" aria-labelledby="confirm-remove-title">
+      <h2 id="confirm-remove-title" data-i18n="dialog.remove_title"></h2>
+      <p id="confirm-remove-tunnel"></p>
+      <p data-i18n="dialog.remove_body"></p>
+      <p class="button-row">
+        <button id="confirm-remove-yes" type="button" class="danger" data-i18n="dialog.remove_yes"></button>
+        <button id="confirm-remove-no" type="button" autofocus data-i18n="common.cancel"></button>
+      </p>
+    </dialog>
+  </body>
+</html>

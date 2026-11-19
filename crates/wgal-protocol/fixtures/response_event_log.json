@@ -1,0 +1,103 @@
+{
+  "protocol_version": 1,
+  "request_id": "req-0016",
+  "outcome": {
+    "ok": {
+      "kind": "event_log",
+      "entries": [
+        {
+          "seq": 1042,
+          "at_unix_ms": 1767225970000,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "retries_exhausted",
+            "retries": 5
+          }
+        },
+        {
+          "seq": 1041,
+          "at_unix_ms": 1767225361500,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "notification_sent",
+            "incident_id": "inc-0007",
+            "notice": "alert"
+          }
+        },
+        {
+          "seq": 1040,
+          "at_unix_ms": 1767225360000,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "recovery_failed",
+            "next_retry_unix_ms": 1767225420000
+          }
+        },
+        {
+          "seq": 1039,
+          "at_unix_ms": 1767225360000,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "light_changed",
+            "light": "red",
+            "reason": "recovery_failed"
+          }
+        },
+        {
+          "seq": 1038,
+          "at_unix_ms": 1767225300000,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "recovery_started",
+            "attempt": 1
+          }
+        },
+        {
+          "seq": 1037,
+          "at_unix_ms": 1767225300000,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "fault_confirmed",
+            "incident_id": "inc-0007"
+          }
+        },
+        {
+          "seq": 1036,
+          "at_unix_ms": 1767225300000,
+          "tunnel_id": "home-3",
+          "removed_tunnel": false,
+          "event": {
+            "kind": "probe_failed",
+            "streak": 5,
+            "needed": 3
+          }
+        },
+        {
+          "seq": 1035,
+          "at_unix_ms": 1767225010000,
+          "tunnel_id": null,
+          "removed_tunnel": true,
+          "event": {
+            "kind": "tunnel_removed"
+          }
+        },
+        {
+          "seq": 1034,
+          "at_unix_ms": 1767225000000,
+          "tunnel_id": null,
+          "removed_tunnel": false,
+          "event": {
+            "kind": "watchdog_started"
+          }
+        }
+      ],
+      "more": true
+    }
+  }
+}

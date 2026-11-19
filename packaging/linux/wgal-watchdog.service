@@ -1,0 +1,38 @@
+# WG Always Live's watchdog (WGW-001-C). Installed by install.sh as
+# /etc/systemd/system/wgal-watchdog.service; removed by uninstall.sh.
+#
+# It runs as root: it starts and stops wg-quick@<interface> units through
+# systemctl and probes through each tunnel. It never edits a WireGuard
+# configuration or whether a wg-quick unit starts at boot.
+[Unit]
+Description=WG Always Live watchdog (checks that the official WireGuard tunnels carry traffic)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/wgal/wgal-watchdog
+# Restarted when it fails (a dead loop exits with 11); not when it was
+# started by the wrong user (5), which a restart cannot fix.
+Restart=on-failure
+RestartSec=5
+RestartPreventExitStatus=5
+# Its stop waits up to 10 s for the socket server and 30 s plus 5 s for the
+# loop (a stop or start of a tunnel already under way).
+TimeoutStopSec=45
+# /var/lib/wgal (0700): state, notify (the bot token, 0600), events.
+StateDirectory=wgal
+StateDirectoryMode=0700
+# /run/wgal (0755): the socket, watchdog.sock (0666; the watchdog decides
+# who it admits).
+RuntimeDirectory=wgal
+RuntimeDirectoryMode=0755
+UMask=0077
+# It needs root's view of the network and of systemd, nothing more.
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

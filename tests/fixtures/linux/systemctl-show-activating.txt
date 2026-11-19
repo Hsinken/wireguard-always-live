@@ -1,0 +1,5 @@
+FragmentPath=/usr/lib/systemd/system/wg-quick@.service
+DropInPaths=
+LoadState=loaded
+ActiveState=activating
+SubState=start

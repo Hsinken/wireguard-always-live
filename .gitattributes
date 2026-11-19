@@ -1,0 +1,28 @@
+# LF for project sources. Files that predate the bootstrap (LICENSE and the
+# owner's specification) are deliberately not matched, so they stay
+# byte-for-byte as committed.
+*.rs text eol=lf
+*.ts text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.svg text eol=lf
+Cargo.lock text eol=lf
+/AGENTS.md text eol=lf
+# Install scripts: Command Prompt files need CRLF, shell scripts and the
+# systemd and desktop files LF, whatever the checkout's platform.
+*.cmd text eol=crlf
+*.sh text eol=lf
+*.service text eol=lf
+*.desktop text eol=lf
+
+# Platform output fixtures stay byte-for-byte as captured: the parsers reject
+# carriage returns, so no checkout may convert line endings.
+tests/fixtures/** -text
+
+*.png binary
+*.ico binary
+*.icns binary

@@ -1,0 +1,1260 @@
+/* One spacing scale (4, 8, 12, 16, 24 px) and one set of color tokens, light
+   and dark. Every light and every log category has a shape and a word as
+   well as a color; color is never the only cue. */
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, "Segoe UI", "Microsoft JhengHei UI", "PingFang TC", "Noto Sans TC", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --radius: 8px;
+
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #59636e;
+  --border: #d1d9e0;
+  --accent: #0969da;
+  --accent-soft: #ddf4ff;
+  --green: #1a7f37;
+  --green-soft: #dafbe1;
+  --yellow: #9a6700;
+  --yellow-soft: #fff8c5;
+  --red: #cf222e;
+  --red-soft: #ffebe9;
+  --gray: #6e7781;
+  --gray-soft: #eff2f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --text: #e6edf3;
+    --muted: #9198a1;
+    --border: #3d444d;
+    --accent: #4493f8;
+    --accent-soft: #10243e;
+    --green: #3fb950;
+    --green-soft: #12261a;
+    --yellow: #d29922;
+    --yellow-soft: #2b2111;
+    --red: #f85149;
+    --red-soft: #2d1416;
+    --gray: #9198a1;
+    --gray-soft: #21262d;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* The header and footer stay in view and each tab scrolls in its own region.
+   When the window (or the zoomed page) is too short for that, as the
+   smallest window (360 px) is, the whole page scrolls instead, so the
+   header never takes the content's room. */
+@media (min-height: 28rem) {
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  header,
+  footer {
+    flex: none;
+  }
+
+  /* A long answer never squeezes the content out: past this the footer
+     scrolls on its own. */
+  footer {
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+
+  main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* The containing block of the screen-reader-only text below: without it
+   that text would be placed against the page and stretch it past the
+   scrolling region. */
+main {
+  position: relative;
+  padding: var(--s3) var(--s4) var(--s4);
+}
+
+.content {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+/* ---- Header, tabs, footer ---- */
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: var(--s1) var(--s3) 0;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+}
+
+header h1 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.link {
+  margin: 0;
+  font-size: 0.85rem;
+  padding: 2px var(--s2);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.link-ok {
+  color: var(--green);
+}
+
+.link-paused {
+  color: var(--muted);
+}
+
+.link-lost,
+.link-storage_failed {
+  color: var(--red);
+  border-color: var(--red);
+  font-weight: 600;
+}
+
+.summary-line {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Each count in the colour its light has on the cards. */
+.summary-line .tone-green {
+  color: var(--green);
+}
+
+.summary-line .tone-yellow {
+  color: var(--yellow);
+}
+
+.summary-line .tone-red {
+  color: var(--red);
+}
+
+.summary-line .tone-gray,
+.summary-line .tone-expired {
+  color: var(--gray);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--s1);
+  margin-top: var(--s1);
+  overflow-x: auto;
+}
+
+[role="tab"] {
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: none;
+  padding: 5px var(--s3);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+[role="tab"]:hover {
+  color: var(--text);
+}
+
+[role="tab"][aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: var(--s2) var(--s4);
+}
+
+footer:has(.message:empty) {
+  display: none;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ---- Common ---- */
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 var(--s2);
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 0 0 var(--s2);
+}
+
+h4 {
+  font-size: 0.9rem;
+  margin: var(--s3) 0 var(--s2);
+}
+
+p {
+  margin: 0 0 var(--s2);
+}
+
+.hint,
+.note,
+.current {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.note,
+.current {
+  margin: 0;
+}
+
+.warning {
+  color: var(--red);
+}
+
+.warning:empty,
+.form-status:empty,
+.current:empty {
+  display: none;
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s2);
+}
+
+.panel-head h2 {
+  margin: 0;
+}
+
+/* One compact row on top of a tab: a short hint and the tab's controls. */
+.panel-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.panel-bar .hint {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s4);
+  margin: 0 0 var(--s4);
+}
+
+#add.group {
+  margin-top: var(--s4);
+}
+
+.empty {
+  padding: var(--s5) var(--s4);
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+/* Nothing from the watchdog widens the page: names (96 bytes), tunnel IDs
+   (64 characters) and details (256 bytes) wrap anywhere instead of being
+   cut, so no text needs a tooltip to be read in full. */
+.name,
+.reason,
+.stats dd,
+.facts dd,
+.message,
+.overlay,
+.banner,
+.discovered .label,
+.discovered .status,
+.observe li,
+.log .who,
+.log .what,
+.form-status,
+.judgment {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- Controls ---- */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  max-width: 100%;
+}
+
+button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px var(--s3);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--muted);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+button.danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+input:not([type="checkbox"], [type="radio"]),
+select,
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px var(--s2);
+}
+
+textarea {
+  resize: vertical;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+h2:focus-visible {
+  outline: 3px solid Highlight;
+  outline-offset: 2px;
+}
+
+/* Kept focusable so focus is not lost when a control becomes unavailable
+   under it; `title` gives the reason. */
+[aria-disabled="true"],
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-row,
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.button-row {
+  margin: var(--s3) 0 0;
+}
+
+/* A checkbox drawn as a switch: the knob's position, not only its color,
+   tells on from off, and the words are always beside it. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+input[role="switch"] {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid var(--muted);
+  background: var(--gray-soft);
+  cursor: inherit;
+}
+
+input[role="switch"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.25rem - 6px);
+  height: calc(1.25rem - 6px);
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+
+input[role="switch"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+input[role="switch"]:checked::before {
+  background: #ffffff;
+  transform: translateX(1rem);
+}
+
+@media (forced-colors: active) {
+  input[role="switch"] {
+    appearance: auto;
+    width: auto;
+    height: auto;
+  }
+
+  input[role="switch"]::before {
+    content: none;
+  }
+}
+
+/* ---- Forms ---- */
+
+fieldset {
+  border: none;
+  margin: 0 0 var(--s4);
+  padding: 0;
+  min-width: 0;
+}
+
+legend {
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: var(--s2);
+}
+
+.grid,
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: var(--s3) var(--s4);
+  align-items: start;
+}
+
+.form-grid > h3,
+.span-all {
+  grid-column: 1 / -1;
+}
+
+.form-grid > h3 {
+  margin: 0;
+}
+
+.form-grid > .button-row {
+  margin: 0;
+}
+
+.field {
+  display: grid;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+.field > label {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* The four timing fields two by two; the recovery target wider than its
+   port. One column on a narrow card. */
+.timing-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.target-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(7rem, 1fr);
+}
+
+@container card (max-width: 26rem) {
+  .timing-grid,
+  .target-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.grid .field:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s5);
+  margin-bottom: var(--s3);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 2rem;
+}
+
+.inline-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.inline-field select {
+  width: auto;
+  max-width: 16rem;
+}
+
+.inline-field input {
+  width: 8rem;
+}
+
+#zone-name-field input {
+  width: 14rem;
+}
+
+/* The value beside the automatic count or the system zone is not used while that is chosen. */
+.inline-field.inactive input {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.check,
+.check-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.check-field {
+  flex-wrap: wrap;
+  column-gap: var(--s3);
+}
+
+.check {
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.form-status {
+  margin: var(--s2) 0 0;
+  font-size: 0.9rem;
+}
+
+.judgment {
+  margin: var(--s3) 0 0;
+  padding: var(--s2) var(--s3);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  background: var(--accent-soft);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.judgment.invalid {
+  border-left-color: var(--red);
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+/* ---- Overlay and banner ---- */
+
+.overlay {
+  border: 2px solid var(--red);
+  background: var(--red-soft);
+  border-radius: var(--radius);
+  padding: var(--s3) var(--s4);
+  margin: 0 0 var(--s4);
+}
+
+.overlay p {
+  margin: var(--s1) 0 0;
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s3);
+  border-left: 4px solid var(--yellow);
+  background: var(--yellow-soft);
+  border-radius: 6px;
+  padding: var(--s2) var(--s3);
+  margin: 0 0 var(--s4);
+}
+
+.banner p {
+  margin: 0;
+}
+
+/* `hidden` must win over the display rules above. */
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Tunnel cards ---- */
+
+.cards,
+.discovered,
+.observe,
+.log {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* One column in the default window; more on a wide one. Cards keep their
+   own height, so opening one card's settings moves none of the others in
+   its row. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr));
+  gap: var(--s3);
+  align-items: start;
+  margin-bottom: var(--s4);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--gray);
+  border-radius: var(--radius);
+  padding: 10px var(--s4);
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  container: card / inline-size;
+}
+
+.card.light-green {
+  border-left-color: var(--green);
+}
+
+.card.light-yellow {
+  border-left-color: var(--yellow);
+}
+
+.card.light-red {
+  border-left-color: var(--red);
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+}
+
+.card .name {
+  margin: 0;
+  font-size: 1.05rem;
+  flex: 1 1 10rem;
+}
+
+.light {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  padding: 1px var(--s2);
+  border-radius: 999px;
+  background: var(--gray-soft);
+  color: var(--gray);
+}
+
+.light-green .light {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.light-yellow .light {
+  background: var(--yellow-soft);
+  color: var(--yellow);
+}
+
+.light-red .light {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.light-unknown .light {
+  font-style: italic;
+}
+
+/* A green light whose evidence expired: said over the card, in a box that
+   reads as neither a light nor a fault, until the next snapshot. */
+.expired-note {
+  margin: 0;
+  border: 2px dashed var(--gray);
+  background: var(--gray-soft);
+  border-radius: 6px;
+  padding: var(--s1) var(--s2);
+  font-weight: 600;
+}
+
+.expired-note::before {
+  content: "◷ ";
+}
+
+.timing {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.reason,
+.failures {
+  margin: 0;
+}
+
+/* A tunnel disconnected on purpose reads as calm, not as a problem. */
+.intended .reason {
+  color: var(--muted);
+}
+
+.failures {
+  font-weight: 600;
+  color: var(--yellow);
+  font-variant-numeric: tabular-nums;
+}
+
+.failures::before {
+  content: "▲ ";
+}
+
+/* A tunnel's fault in words; its original text is collapsed below it. */
+.fault {
+  margin: 0;
+  color: var(--red);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.fault::before {
+  content: "✕ ";
+}
+
+/* The original text of an error (the watchdog's or the shell's own words
+   and codes), collapsed under the sentence wherever an error is shown. */
+details.raw {
+  margin: var(--s1) 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+details.raw summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+details.raw code {
+  display: block;
+  margin-top: var(--s1);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The four numbers in one row when the card has room, two by two when it
+   does not; the observe targets, when there are any, below them. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, max-content));
+  justify-content: start;
+  gap: var(--s1) var(--s5);
+  margin: 0;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+@container card (max-width: 30rem) {
+  .card .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--s4);
+  }
+}
+
+.stats dt {
+  line-height: 1.3;
+}
+
+.stats .wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 40rem) {
+  .group .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.group .stats {
+  border: none;
+  padding: 0;
+  margin-bottom: var(--s3);
+}
+
+.stats dt,
+.facts dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stats dd,
+.facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--s4);
+}
+
+.switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+}
+
+.switch-notes {
+  display: grid;
+  gap: 2px;
+}
+
+.switch-notes:not(:has(.note:not([hidden]))) {
+  display: none;
+}
+
+.card details {
+  border-top: 1px solid var(--border);
+  padding-top: var(--s1);
+}
+
+.card summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.summary-note {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-left: var(--s2);
+}
+
+.settings-form {
+  margin-top: var(--s3);
+}
+
+.settings .advanced,
+.settings .danger-zone {
+  margin-top: var(--s4);
+  padding-top: var(--s3);
+  border-top: 1px dashed var(--border);
+}
+
+.settings h4 {
+  margin-top: 0;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--s2) var(--s4);
+  margin: var(--s3) 0 0;
+}
+
+.observe li {
+  padding: 2px 0;
+}
+
+.observe .failing::before {
+  content: "■ ";
+  color: var(--red);
+}
+
+/* ---- Discovered tunnels ---- */
+
+.discovered li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.discovered li:last-child {
+  border-bottom: none;
+}
+
+.discovered .label {
+  flex: 1 1 16rem;
+}
+
+.discovered .status {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.discovered .status:empty,
+.discovered .hint:empty {
+  display: none;
+}
+
+/* ---- Log ---- */
+
+.log-state {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.log-state:empty {
+  display: none;
+}
+
+.log {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.log:empty {
+  display: none;
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: 7.5rem 4.5rem minmax(6rem, 14rem) minmax(0, 1fr);
+  gap: var(--s1) var(--s3);
+  align-items: baseline;
+  padding: 6px var(--s3);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+.entry time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.entry .cat {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  justify-self: start;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.entry .who {
+  font-weight: 500;
+}
+
+/* The user's own actions in the text color, automatic ones in the accent,
+   recoveries in green: shapes and words tell them apart as well. */
+.cat-manual .cat {
+  color: var(--text);
+}
+
+.cat-auto .cat {
+  color: var(--accent);
+}
+
+.cat-ok .cat {
+  color: var(--green);
+}
+
+.cat-fault .cat {
+  color: var(--red);
+}
+
+.cat-external .cat {
+  color: var(--yellow);
+}
+
+.cat-info .cat {
+  color: var(--muted);
+}
+
+/* The window's own records of its link to the watchdog: ⚠ when it could
+   not reach it, ✓ when it could again. */
+.tone-down .cat {
+  color: var(--red);
+}
+
+.tone-restored .cat {
+  color: var(--green);
+}
+
+/* Narrow windows: time, kind and tunnel on one line, the sentence below. */
+@media (max-width: 40rem) {
+  .entry {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .entry .what {
+    grid-column: 1 / -1;
+  }
+}
+
+.log-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s3);
+}
+
+/* ---- Dialogs ---- */
+
+dialog {
+  max-width: min(32rem, calc(100vw - 3rem));
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--s5);
+  background: var(--surface);
+  color: var(--text);
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+dialog .button-row {
+  justify-content: flex-end;
+}
+
+/* ---- Grouped sections: one gap between every child ---- */
+
+.group {
+  display: grid;
+  gap: var(--s3);
+  align-content: start;
+}
+
+.group > * {
+  margin: 0;
+}
+
+.group > h3:not(:first-child) {
+  margin-top: var(--s3);
+}
+
+.group.form-grid {
+  gap: var(--s3) var(--s4);
+}
+
+/* The tab list scrolls sideways when narrow, which would clip an outer
+   focus ring. */
+[role="tab"]:focus-visible {
+  outline-offset: -3px;
+}
+
+/* The log export: the button and its choice on one line, the note and the
+   result below. */
+.export-bar {
+  justify-content: flex-start;
+}
+
+.panel-bar.export-bar .hint,
+.export-bar .form-status {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* ---- About ---- */
+
+.about-facts {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+}
+
+.about-facts div {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: var(--s3);
+}
+
+.about-facts dt {
+  color: var(--muted);
+}
+
+.about-facts dd {
+  margin: 0;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The verdict: an icon and words, not only a color. */
+.compat-verdict {
+  display: grid;
+  gap: var(--s1);
+  border-left: 4px solid var(--gray);
+  background: var(--gray-soft);
+  padding: var(--s2) var(--s3);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.compat-verdict p {
+  margin: 0;
+}
+
+.compat-verdict.compatible {
+  border-left-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.compat-verdict.incompatible,
+.compat-warning {
+  border-left: 4px solid var(--red);
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.compat-verdict.unknown {
+  color: var(--muted);
+}
+
+/* Below the summary on every tab, while one side is too old. */
+.compat-warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  margin-top: var(--s1);
+  padding: 2px var(--s2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.compat-warning p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.compat-warning button {
+  padding: 0 var(--s2);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* The message template previews, side by side when there is room. */
+.previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--s3);
+  margin: var(--s3) 0 0;
+}
+
+.preview {
+  margin: 0;
+  min-width: 0;
+}
+
+.preview figcaption {
+  margin-bottom: var(--s1);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.preview pre {
+  margin: 0;
+  padding: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-family: inherit;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Least privilege for the main window: the contract version, this binary's version, contract requests to the watchdog, the tray summary, saving a log export to a file the shell names in Downloads, the version of the MCP server installed beside the window, the AI tools whose settings can have that server and adding it to, or removing it from, one of them after the user confirms (a closed set of tools and fixed files), the languages the system prefers, and listening to the tray's events. Nothing else.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "allow-protocol-info",
+    "allow-app-version",
+    "allow-watchdog-request",
+    "allow-update-tray",
+    "allow-save-log-export",
+    "allow-save-settings-export",
+    "allow-mcp-version",
+    "allow-mcp-clients",
+    "allow-set-up-mcp-client",
+    "allow-remove-mcp-client",
+    "allow-system-languages",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

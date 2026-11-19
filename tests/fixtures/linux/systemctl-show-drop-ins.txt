@@ -1,0 +1,5 @@
+FragmentPath=/usr/lib/systemd/system/wg-quick@.service
+DropInPaths=/etc/systemd/system/wg-quick@.service.d/10-order.conf /etc/systemd/system/wg-quick@wg-lab.service.d/20-local.conf
+LoadState=loaded
+ActiveState=active
+SubState=exited

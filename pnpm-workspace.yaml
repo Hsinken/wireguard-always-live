@@ -1,0 +1,5 @@
+packages:
+  - apps/*
+
+# Refuse dependency versions published less than 7 days ago (minutes).
+minimumReleaseAge: 10080

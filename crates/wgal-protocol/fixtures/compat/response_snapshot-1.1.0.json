@@ -1,0 +1,230 @@
+{
+  "protocol_version": 1,
+  "request_id": "req-0001",
+  "outcome": {
+    "ok": {
+      "kind": "snapshot",
+      "snapshot": {
+        "generated_at_unix_ms": 1767225600000,
+        "storage": "ok",
+        "capabilities": {
+          "query_state": "supported",
+          "start_stop": "supported",
+          "bound_icmp_probe": "supported",
+          "bound_tcp_probe": "unknown",
+          "read_metrics": "unsupported",
+          "verified_concurrent_tunnels": 1,
+          "background_operation": "unknown"
+        },
+        "monitoring_paused": false,
+        "host": {
+          "watchdog_version": "1.0.0",
+          "min_gui_version": "1.0.0",
+          "workers": {
+            "configured": null,
+            "suggested": 4,
+            "limit": 4,
+            "effective": 4,
+            "running": 3
+          },
+          "time_zone": {
+            "configured": "Asia/Taipei",
+            "effective": "Asia/Taipei",
+            "utc_offset_secs": 28800
+          }
+        },
+        "notification": {
+          "enabled": true,
+          "device_name": "辦公室筆電",
+          "chat_id": "-1001234567890",
+          "token": "stored",
+          "last_test": {
+            "request_id": "req-0009",
+            "state": "accepted",
+            "requested_at_unix_ms": 1767225500000,
+            "finished_at_unix_ms": 1767225501200,
+            "failure": null
+          },
+          "last_failure": null,
+          "templates_id": "zh-TW/3f2a91c0"
+        },
+        "tunnels": [
+          {
+            "tunnel_id": "office-1",
+            "display_name": "Office",
+            "light": "green",
+            "light_reason": "verified",
+            "light_since_unix_ms": 1767225540000,
+            "deadline_unix_ms": null,
+            "next_retry_unix_ms": null,
+            "last_verified_unix_ms": 1767225599000,
+            "intent": {
+              "desired": "connected",
+              "monitoring_enabled": true,
+              "auto_recovery_enabled": true,
+              "start_when_stopped_externally": false
+            },
+            "auto_recovery_allowed": true,
+            "notifications_enabled": true,
+            "takeover": "managed",
+            "os_state": "connected",
+            "data_health": "healthy",
+            "recovery": "idle",
+            "recovery_target": {
+              "target": {
+                "address": "192.0.2.1",
+                "probe": {
+                  "kind": "icmp"
+                }
+              },
+              "last_probe": {
+                "started_at_unix_ms": 1767225598980,
+                "finished_at_unix_ms": 1767225599000,
+                "result": {
+                  "result": "reply",
+                  "rtt_ms": 12
+                }
+              }
+            },
+            "observe_targets": [
+              {
+                "target": {
+                  "address": "192.0.2.10",
+                  "probe": {
+                    "kind": "tcp_connect",
+                    "port": 443
+                  }
+                },
+                "last_probe": {
+                  "started_at_unix_ms": 1767225599080,
+                  "finished_at_unix_ms": 1767225599100,
+                  "result": {
+                    "result": "no_reply"
+                  }
+                }
+              }
+            ],
+            "probe": {
+              "interval_secs": 15,
+              "timeout_secs": 2,
+              "retries": 2,
+              "min_fault_secs": 60
+            },
+            "freshness_secs": 35,
+            "consecutive_failures": 0,
+            "fault": null,
+            "incident": null
+          },
+          {
+            "tunnel_id": "lab-2",
+            "display_name": "實驗室",
+            "light": "red",
+            "light_reason": "probe_unavailable",
+            "light_since_unix_ms": 1767225480000,
+            "deadline_unix_ms": null,
+            "next_retry_unix_ms": null,
+            "last_verified_unix_ms": null,
+            "intent": {
+              "desired": "connected",
+              "monitoring_enabled": true,
+              "auto_recovery_enabled": false,
+              "start_when_stopped_externally": false
+            },
+            "auto_recovery_allowed": false,
+            "notifications_enabled": false,
+            "takeover": "observe_only",
+            "os_state": "connected",
+            "data_health": "unknown",
+            "recovery": "blocked",
+            "recovery_target": {
+              "target": {
+                "address": "192.0.2.2",
+                "probe": {
+                  "kind": "tcp_connect",
+                  "port": 443
+                }
+              },
+              "last_probe": {
+                "started_at_unix_ms": 1767225597980,
+                "finished_at_unix_ms": 1767225598000,
+                "result": {
+                  "result": "error",
+                  "error": "permission_denied"
+                }
+              }
+            },
+            "observe_targets": [],
+            "probe": {
+              "interval_secs": 30,
+              "timeout_secs": 3,
+              "retries": 1,
+              "min_fault_secs": 90
+            },
+            "freshness_secs": 51,
+            "consecutive_failures": 0,
+            "fault": {
+              "kind": "permission_denied",
+              "message": "probe tool not permitted"
+            },
+            "incident": null
+          },
+          {
+            "tunnel_id": "home-3",
+            "display_name": "Home",
+            "light": "red",
+            "light_reason": "recovery_failed",
+            "light_since_unix_ms": 1767225420000,
+            "deadline_unix_ms": null,
+            "next_retry_unix_ms": 1767225660000,
+            "last_verified_unix_ms": 1767225100000,
+            "intent": {
+              "desired": "connected",
+              "monitoring_enabled": true,
+              "auto_recovery_enabled": true,
+              "start_when_stopped_externally": false
+            },
+            "auto_recovery_allowed": true,
+            "notifications_enabled": true,
+            "takeover": "managed",
+            "os_state": "connected",
+            "data_health": "failed",
+            "recovery": "backoff",
+            "recovery_target": {
+              "target": {
+                "address": "203.0.113.1",
+                "probe": {
+                  "kind": "icmp"
+                }
+              },
+              "last_probe": {
+                "started_at_unix_ms": 1767225596980,
+                "finished_at_unix_ms": 1767225597000,
+                "result": {
+                  "result": "no_reply"
+                }
+              }
+            },
+            "observe_targets": [],
+            "probe": {
+              "interval_secs": 15,
+              "timeout_secs": 2,
+              "retries": 2,
+              "min_fault_secs": 60
+            },
+            "freshness_secs": 35,
+            "consecutive_failures": 9,
+            "fault": null,
+            "incident": {
+              "incident_id": "inc-0007",
+              "opened_at_unix_ms": 1767225300000,
+              "first_recovery": "failed",
+              "backoff_step": 1,
+              "stable_since_unix_ms": null,
+              "notification": "sent"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

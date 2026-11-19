@@ -1,0 +1,3 @@
+wg-quick@.service disabled enabled
+wg-quick@wg-office.service enabled enabled
+wg-quick@wg-spare.service enabled enabled

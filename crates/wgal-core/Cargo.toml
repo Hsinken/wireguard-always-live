@@ -1,0 +1,20 @@
+[package]
+name = "wgal-core"
+description = "OS-independent watchdog abstractions: time source and platform adapter boundary."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+wgal-protocol.workspace = true
+serde.workspace = true
+
+# Integration tests in tests/ only. Unit tests in src/ cannot use it: wgal-testkit
+# depends on wgal-core, so its types would come from a second copy of this crate.
+[dev-dependencies]
+wgal-testkit.workspace = true
+
+[lints]
+workspace = true

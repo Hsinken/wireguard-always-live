@@ -1,0 +1,61 @@
+{
+  "services": [
+    { "name": "EventLog", "state": 4 },
+    { "name": "Dnscache", "state": 4 },
+    { "name": "WireGuardManager", "state": 4 },
+    { "name": "WireGuardTunnel$office", "state": 4 },
+    { "name": "WireGuardTunnel$lab", "state": 1 },
+    { "name": "WireGuardTunnel$home-3", "state": 2 },
+    { "name": "WireGuardTunnel$bad name", "state": 4 },
+    { "name": "WireGuardTunnel$CON", "state": 1 },
+    { "name": "WireGuardTunnel$a$b", "state": 1 },
+    { "name": "WireGuardTunnel$", "state": 1 },
+    { "name": "wireguardtunnel$lower", "state": 1 },
+    { "name": "WireGuardTunnel$this-name-is-longer-than-32-bytes", "state": 1 }
+  ],
+  "adapters": [
+    {
+      "friendly_name": "Ethernet",
+      "if_type": 6,
+      "if_index": 7,
+      "luid": 1688849877467136,
+      "up": true,
+      "ipv4": ["192.0.2.10"]
+    },
+    {
+      "friendly_name": "Loopback Pseudo-Interface 1",
+      "if_type": 24,
+      "if_index": 1,
+      "luid": 6755399441055744,
+      "up": true,
+      "ipv4": ["127.0.0.1"]
+    },
+    {
+      "friendly_name": "office",
+      "if_type": 53,
+      "if_index": 21,
+      "luid": 14918173849550848,
+      "up": true,
+      "ipv4": ["198.51.100.2"]
+    },
+    {
+      "friendly_name": "home-3",
+      "if_type": 53,
+      "if_index": 23,
+      "luid": 14918173866328064,
+      "up": true,
+      "ipv4": ["198.51.100.3"]
+    }
+  ],
+  "routes": [
+    { "destination": "203.0.113.1", "if_index": 21, "luid": 14918173849550848, "source": "198.51.100.2" },
+    { "destination": "203.0.113.30", "if_index": 23, "luid": 14918173866328064, "source": "198.51.100.3" },
+    { "destination": "192.0.2.50", "if_index": 7, "luid": 1688849877467136, "source": "192.0.2.10" }
+  ],
+  "default_routes": [
+    { "if_index": 7, "luid": 1688849877467136, "next_hop": "192.0.2.1" }
+  ],
+  "neighbors": [
+    { "luid": 1688849877467136, "address": "192.0.2.1", "is_static": false, "answers": true }
+  ]
+}

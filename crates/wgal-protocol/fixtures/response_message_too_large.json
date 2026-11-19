@@ -1,0 +1,11 @@
+{
+  "protocol_version": 1,
+  "request_id": null,
+  "outcome": {
+    "err": {
+      "code": "message_too_large",
+      "reason": null,
+      "message": "request exceeds 65536 bytes"
+    }
+  }
+}

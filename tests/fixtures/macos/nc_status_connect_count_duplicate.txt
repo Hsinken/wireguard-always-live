@@ -1,0 +1,25 @@
+Connected
+Extended Status <dictionary> {
+  IPv4 : <dictionary> {
+    Addresses : <array> {
+      0 : 192.0.2.10
+    }
+    DestAddresses : <array> {
+      0 : 192.0.2.10
+    }
+    InterfaceName : utun4
+    Router : 192.0.2.10
+    ServerAddress : 127.0.0.1
+    SubnetMasks : <array> {
+      0 : 255.255.255.255
+    }
+  }
+  ConnectCount : 2
+  Status : 2
+  VPN : <dictionary> {
+    ConnectCount : 2
+    ConnectTime : 1182394
+    RemoteAddress : 127.0.0.1
+    Status : 2
+  }
+}

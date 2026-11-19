@@ -1,0 +1,223 @@
+[
+  {
+    "tag": "zh-TW",
+    "name": "繁體中文",
+    "templates": {
+      "id": "zh-TW/f967042d",
+      "formal": "【WG Always Live 異常通知】\n裝置：{device}\n隧道：{tunnel}\n事件：{incident}\n時區：{time_zone}\n異常開始：{started_at}\n復原結果：{result}\n{retry}",
+      "result_failed": "第一輪自動復原失敗（重新啟動後仍無法通訊）",
+      "result_not_executed": "未能執行自動復原（無法啟停這條隧道）",
+      "retry_limited": "WG Always Live 會每 {interval} 秒再試一次，最多 {limit} 次；恢復並穩定 2 分鐘後會再通知。",
+      "retry_forever": "WG Always Live 會每 {interval} 秒持續重試；恢復並穩定 2 分鐘後會再通知。",
+      "retry_none": "WG Always Live 不會再自動重試，請手動處理；恢復並穩定 2 分鐘後會再通知。",
+      "exhausted": "【WG Always Live 停止重試】\n裝置：{device}\n隧道：{tunnel}\n事件：{incident}\n時區：{time_zone}\n異常開始：{started_at}\n已自動重試 {retries} 次，達到上限，停止自動復原。請手動處理；恢復並穩定 2 分鐘後會再通知。",
+      "recovered": "【WG Always Live 已恢復】\n裝置：{device}\n隧道：{tunnel}\n事件：{incident}\n時區：{time_zone}\n異常開始：{started_at}\n恢復時間：{recovered_at}\n通訊已恢復，並穩定 2 分鐘。",
+      "test": "【WG Always Live 測試通知】\n這是測試訊息，不代表任何 VPN 故障。\n裝置：{device}\n時區：{time_zone}\n時間：{time}",
+      "unnamed_device": "（未命名裝置）"
+    }
+  },
+  {
+    "tag": "en",
+    "name": "English",
+    "templates": {
+      "id": "en/92c719a8",
+      "formal": "[WG Always Live] Fault alert\nDevice: {device}\nTunnel: {tunnel}\nIncident: {incident}\nTime zone: {time_zone}\nFault started: {started_at}\nRecovery result: {result}\n{retry}",
+      "result_failed": "The first automatic recovery failed (still no traffic after restarting the tunnel)",
+      "result_not_executed": "Automatic recovery could not run (the tunnel cannot be started or stopped)",
+      "retry_limited": "WG Always Live will try again every {interval} seconds, up to {limit} times; you will be notified again once traffic is back and stable for 2 minutes.",
+      "retry_forever": "WG Always Live will keep trying every {interval} seconds; you will be notified again once traffic is back and stable for 2 minutes.",
+      "retry_none": "WG Always Live will not retry automatically; please handle it manually. You will be notified again once traffic is back and stable for 2 minutes.",
+      "exhausted": "[WG Always Live] Retries stopped\nDevice: {device}\nTunnel: {tunnel}\nIncident: {incident}\nTime zone: {time_zone}\nFault started: {started_at}\nRetried automatically {retries} times and reached the limit; automatic recovery has stopped. Please handle it manually; you will be notified again once traffic is back and stable for 2 minutes.",
+      "recovered": "[WG Always Live] Recovered\nDevice: {device}\nTunnel: {tunnel}\nIncident: {incident}\nTime zone: {time_zone}\nFault started: {started_at}\nRecovered at: {recovered_at}\nTraffic is back and has been stable for 2 minutes.",
+      "test": "[WG Always Live] Test notification\nThis is a test message and does not mean any VPN fault.\nDevice: {device}\nTime zone: {time_zone}\nTime: {time}",
+      "unnamed_device": "(unnamed device)"
+    }
+  },
+  {
+    "tag": "zh-CN",
+    "name": "简体中文",
+    "templates": {
+      "id": "zh-CN/7fa68a0d",
+      "formal": "【WG Always Live 异常通知】\n设备：{device}\n隧道：{tunnel}\n事件：{incident}\n时区：{time_zone}\n异常开始：{started_at}\n恢复结果：{result}\n{retry}",
+      "result_failed": "第一轮自动恢复失败（重新启动后仍无法通信）",
+      "result_not_executed": "未能执行自动恢复（无法启停这条隧道）",
+      "retry_limited": "WG Always Live 会每 {interval} 秒再试一次，最多 {limit} 次；恢复并稳定 2 分钟后会再次通知。",
+      "retry_forever": "WG Always Live 会每 {interval} 秒持续重试；恢复并稳定 2 分钟后会再次通知。",
+      "retry_none": "WG Always Live 不会再自动重试，请手动处理；恢复并稳定 2 分钟后会再次通知。",
+      "exhausted": "【WG Always Live 停止重试】\n设备：{device}\n隧道：{tunnel}\n事件：{incident}\n时区：{time_zone}\n异常开始：{started_at}\n已自动重试 {retries} 次，达到上限，停止自动恢复。请手动处理；恢复并稳定 2 分钟后会再次通知。",
+      "recovered": "【WG Always Live 已恢复】\n设备：{device}\n隧道：{tunnel}\n事件：{incident}\n时区：{time_zone}\n异常开始：{started_at}\n恢复时间：{recovered_at}\n通信已恢复，并稳定 2 分钟。",
+      "test": "【WG Always Live 测试通知】\n这是测试消息，不代表任何 VPN 故障。\n设备：{device}\n时区：{time_zone}\n时间：{time}",
+      "unnamed_device": "（未命名设备）"
+    }
+  },
+  {
+    "tag": "ja",
+    "name": "日本語",
+    "templates": {
+      "id": "ja/80748df7",
+      "formal": "【WG Always Live 異常通知】\nデバイス：{device}\nトンネル：{tunnel}\nインシデント：{incident}\nタイムゾーン：{time_zone}\n障害の発生：{started_at}\n復旧の結果：{result}\n{retry}",
+      "result_failed": "1回目の自動復旧に失敗しました（トンネルを再起動しても通信が戻りません）",
+      "result_not_executed": "自動復旧を実行できませんでした（トンネルを起動・停止できません）",
+      "retry_limited": "WG Always Live は {interval} 秒ごとに最大 {limit} 回まで再試行します。通信が戻り、2分間安定した時点で改めて通知します。",
+      "retry_forever": "WG Always Live は {interval} 秒ごとに再試行を続けます。通信が戻り、2分間安定した時点で改めて通知します。",
+      "retry_none": "WG Always Live は自動では再試行しません。手動で対処してください。通信が戻り、2分間安定した時点で改めて通知します。",
+      "exhausted": "【WG Always Live 再試行停止】\nデバイス：{device}\nトンネル：{tunnel}\nインシデント：{incident}\nタイムゾーン：{time_zone}\n障害の発生：{started_at}\n自動で {retries} 回再試行して上限に達したため、自動復旧を停止しました。手動で対処してください。通信が戻り、2分間安定した時点で改めて通知します。",
+      "recovered": "【WG Always Live 復旧通知】\nデバイス：{device}\nトンネル：{tunnel}\nインシデント：{incident}\nタイムゾーン：{time_zone}\n障害の発生：{started_at}\n復旧：{recovered_at}\n通信が戻り、2分間安定しています。",
+      "test": "【WG Always Live テスト通知】\nこれはテストメッセージです。VPN の障害ではありません。\nデバイス：{device}\nタイムゾーン：{time_zone}\n時刻：{time}",
+      "unnamed_device": "（名前なしのデバイス）"
+    }
+  },
+  {
+    "tag": "ko",
+    "name": "한국어",
+    "templates": {
+      "id": "ko/9ce4811d",
+      "formal": "[WG Always Live] 장애 알림\n기기: {device}\n터널: {tunnel}\n인시던트: {incident}\n시간대: {time_zone}\n장애 시작: {started_at}\n복구 결과: {result}\n{retry}",
+      "result_failed": "첫 번째 자동 복구에 실패했습니다 (터널을 다시 시작한 후에도 트래픽이 없습니다)",
+      "result_not_executed": "자동 복구를 실행하지 못했습니다 (터널을 시작하거나 중지할 수 없습니다)",
+      "retry_limited": "WG Always Live가 {interval}초마다 최대 {limit}회 다시 시도합니다. 트래픽이 돌아와 2분간 안정되면 다시 알려 드립니다.",
+      "retry_forever": "WG Always Live가 {interval}초마다 계속 다시 시도합니다. 트래픽이 돌아와 2분간 안정되면 다시 알려 드립니다.",
+      "retry_none": "WG Always Live는 자동으로 다시 시도하지 않습니다. 직접 처리해 주세요. 트래픽이 돌아와 2분간 안정되면 다시 알려 드립니다.",
+      "exhausted": "[WG Always Live] 재시도 중단\n기기: {device}\n터널: {tunnel}\n인시던트: {incident}\n시간대: {time_zone}\n장애 시작: {started_at}\n자동으로 {retries}회 재시도하여 한도에 도달했으며 자동 복구를 중단했습니다. 직접 처리해 주세요. 트래픽이 돌아와 2분간 안정되면 다시 알려 드립니다.",
+      "recovered": "[WG Always Live] 복구됨\n기기: {device}\n터널: {tunnel}\n인시던트: {incident}\n시간대: {time_zone}\n장애 시작: {started_at}\n복구 시각: {recovered_at}\n트래픽이 돌아왔으며 2분간 안정적입니다.",
+      "test": "[WG Always Live] 테스트 알림\n테스트 메시지이며 VPN 장애를 의미하지 않습니다.\n기기: {device}\n시간대: {time_zone}\n시각: {time}",
+      "unnamed_device": "(이름 없는 기기)"
+    }
+  },
+  {
+    "tag": "de",
+    "name": "Deutsch",
+    "templates": {
+      "id": "de/26d236fc",
+      "formal": "[WG Always Live] Störungsmeldung\nGerät: {device}\nTunnel: {tunnel}\nVorfall: {incident}\nZeitzone: {time_zone}\nStörung begann: {started_at}\nErgebnis der Wiederherstellung: {result}\n{retry}",
+      "result_failed": "Die erste automatische Wiederherstellung ist fehlgeschlagen (nach dem Neustart des Tunnels fließt weiterhin kein Datenverkehr)",
+      "result_not_executed": "Die automatische Wiederherstellung konnte nicht ausgeführt werden (der Tunnel lässt sich nicht starten oder stoppen)",
+      "retry_limited": "WG Always Live versucht es alle {interval} Sekunden erneut, höchstens {limit} Mal; Sie werden erneut benachrichtigt, sobald der Datenverkehr wieder fließt und 2 Minuten lang stabil ist.",
+      "retry_forever": "WG Always Live versucht es weiter alle {interval} Sekunden; Sie werden erneut benachrichtigt, sobald der Datenverkehr wieder fließt und 2 Minuten lang stabil ist.",
+      "retry_none": "WG Always Live versucht es nicht automatisch erneut; bitte beheben Sie die Störung manuell. Sie werden erneut benachrichtigt, sobald der Datenverkehr wieder fließt und 2 Minuten lang stabil ist.",
+      "exhausted": "[WG Always Live] Wiederholungen beendet\nGerät: {device}\nTunnel: {tunnel}\nVorfall: {incident}\nZeitzone: {time_zone}\nStörung begann: {started_at}\nEs wurde automatisch {retries} Mal erneut versucht und das Limit erreicht; die automatische Wiederherstellung wurde beendet. Bitte beheben Sie die Störung manuell; Sie werden erneut benachrichtigt, sobald der Datenverkehr wieder fließt und 2 Minuten lang stabil ist.",
+      "recovered": "[WG Always Live] Wiederhergestellt\nGerät: {device}\nTunnel: {tunnel}\nVorfall: {incident}\nZeitzone: {time_zone}\nStörung begann: {started_at}\nWiederhergestellt um: {recovered_at}\nDer Datenverkehr fließt wieder und ist seit 2 Minuten stabil.",
+      "test": "[WG Always Live] Testbenachrichtigung\nDies ist eine Testnachricht und bedeutet keine VPN-Störung.\nGerät: {device}\nZeitzone: {time_zone}\nZeit: {time}",
+      "unnamed_device": "(unbenanntes Gerät)"
+    }
+  },
+  {
+    "tag": "es",
+    "name": "Español",
+    "templates": {
+      "id": "es/83118103",
+      "formal": "[WG Always Live] Alerta de fallo\nDispositivo: {device}\nTúnel: {tunnel}\nIncidente: {incident}\nZona horaria: {time_zone}\nInicio del fallo: {started_at}\nResultado de la recuperación: {result}\n{retry}",
+      "result_failed": "Falló la primera recuperación automática (sigue sin haber tráfico tras reiniciar el túnel)",
+      "result_not_executed": "No se pudo ejecutar la recuperación automática (no se puede iniciar ni detener el túnel)",
+      "retry_limited": "WG Always Live volverá a intentarlo cada {interval} segundos, hasta {limit} veces; se le avisará de nuevo cuando el tráfico se restablezca y se mantenga estable durante 2 minutos.",
+      "retry_forever": "WG Always Live seguirá intentándolo cada {interval} segundos; se le avisará de nuevo cuando el tráfico se restablezca y se mantenga estable durante 2 minutos.",
+      "retry_none": "WG Always Live no reintentará automáticamente; resuélvalo de forma manual. Se le avisará de nuevo cuando el tráfico se restablezca y se mantenga estable durante 2 minutos.",
+      "exhausted": "[WG Always Live] Reintentos detenidos\nDispositivo: {device}\nTúnel: {tunnel}\nIncidente: {incident}\nZona horaria: {time_zone}\nInicio del fallo: {started_at}\nSe reintentó automáticamente {retries} veces y se alcanzó el límite; la recuperación automática se ha detenido. Resuélvalo de forma manual; se le avisará de nuevo cuando el tráfico se restablezca y se mantenga estable durante 2 minutos.",
+      "recovered": "[WG Always Live] Recuperado\nDispositivo: {device}\nTúnel: {tunnel}\nIncidente: {incident}\nZona horaria: {time_zone}\nInicio del fallo: {started_at}\nRecuperado a las: {recovered_at}\nEl tráfico se ha restablecido y lleva 2 minutos estable.",
+      "test": "[WG Always Live] Notificación de prueba\nEste es un mensaje de prueba y no indica ningún fallo de la VPN.\nDispositivo: {device}\nZona horaria: {time_zone}\nHora: {time}",
+      "unnamed_device": "(dispositivo sin nombre)"
+    }
+  },
+  {
+    "tag": "pt-BR",
+    "name": "Português (Brasil)",
+    "templates": {
+      "id": "pt-BR/1c3348b9",
+      "formal": "[WG Always Live] Alerta de falha\nDispositivo: {device}\nTúnel: {tunnel}\nIncidente: {incident}\nFuso horário: {time_zone}\nInício da falha: {started_at}\nResultado da recuperação: {result}\n{retry}",
+      "result_failed": "A primeira recuperação automática falhou (ainda sem tráfego após reiniciar o túnel)",
+      "result_not_executed": "A recuperação automática não pôde ser executada (não é possível iniciar nem parar o túnel)",
+      "retry_limited": "O WG Always Live tentará novamente a cada {interval} segundos, até {limit} vezes; você será avisado de novo quando o tráfego voltar e estiver estável por 2 minutos.",
+      "retry_forever": "O WG Always Live continuará tentando a cada {interval} segundos; você será avisado de novo quando o tráfego voltar e estiver estável por 2 minutos.",
+      "retry_none": "O WG Always Live não tentará novamente de forma automática; resolva manualmente. Você será avisado de novo quando o tráfego voltar e estiver estável por 2 minutos.",
+      "exhausted": "[WG Always Live] Tentativas encerradas\nDispositivo: {device}\nTúnel: {tunnel}\nIncidente: {incident}\nFuso horário: {time_zone}\nInício da falha: {started_at}\nForam feitas {retries} tentativas automáticas e o limite foi atingido; a recuperação automática parou. Resolva manualmente; você será avisado de novo quando o tráfego voltar e estiver estável por 2 minutos.",
+      "recovered": "[WG Always Live] Recuperado\nDispositivo: {device}\nTúnel: {tunnel}\nIncidente: {incident}\nFuso horário: {time_zone}\nInício da falha: {started_at}\nRecuperado em: {recovered_at}\nO tráfego voltou e está estável há 2 minutos.",
+      "test": "[WG Always Live] Notificação de teste\nEsta é uma mensagem de teste e não indica nenhuma falha de VPN.\nDispositivo: {device}\nFuso horário: {time_zone}\nHorário: {time}",
+      "unnamed_device": "(dispositivo sem nome)"
+    }
+  },
+  {
+    "tag": "tr",
+    "name": "Türkçe",
+    "templates": {
+      "id": "tr/f7052458",
+      "formal": "[WG Always Live] Arıza bildirimi\nCihaz: {device}\nTünel: {tunnel}\nOlay: {incident}\nSaat dilimi: {time_zone}\nArızanın başlangıcı: {started_at}\nKurtarma sonucu: {result}\n{retry}",
+      "result_failed": "İlk otomatik kurtarma başarısız oldu (tünel yeniden başlatıldıktan sonra da trafik yok)",
+      "result_not_executed": "Otomatik kurtarma çalıştırılamadı (tünel başlatılamıyor veya durdurulamıyor)",
+      "retry_limited": "WG Always Live her {interval} saniyede bir, en fazla {limit} kez yeniden deneyecek; trafik geri gelip 2 dakika kararlı kaldığında yeniden bildirim alacaksınız.",
+      "retry_forever": "WG Always Live her {interval} saniyede bir denemeye devam edecek; trafik geri gelip 2 dakika kararlı kaldığında yeniden bildirim alacaksınız.",
+      "retry_none": "WG Always Live otomatik olarak yeniden denemeyecek; lütfen elle müdahale edin. Trafik geri gelip 2 dakika kararlı kaldığında yeniden bildirim alacaksınız.",
+      "exhausted": "[WG Always Live] Yeniden denemeler durdu\nCihaz: {device}\nTünel: {tunnel}\nOlay: {incident}\nSaat dilimi: {time_zone}\nArızanın başlangıcı: {started_at}\nOtomatik olarak {retries} kez denendi ve sınıra ulaşıldı; otomatik kurtarma durdu. Lütfen elle müdahale edin; trafik geri gelip 2 dakika kararlı kaldığında yeniden bildirim alacaksınız.",
+      "recovered": "[WG Always Live] Kurtarıldı\nCihaz: {device}\nTünel: {tunnel}\nOlay: {incident}\nSaat dilimi: {time_zone}\nArızanın başlangıcı: {started_at}\nKurtarma zamanı: {recovered_at}\nTrafik geri geldi ve 2 dakikadır kararlı.",
+      "test": "[WG Always Live] Test bildirimi\nBu bir test iletisidir; herhangi bir VPN arızası anlamına gelmez.\nCihaz: {device}\nSaat dilimi: {time_zone}\nZaman: {time}",
+      "unnamed_device": "(adsız cihaz)"
+    }
+  },
+  {
+    "tag": "fr",
+    "name": "Français",
+    "templates": {
+      "id": "fr/71c12efd",
+      "formal": "[WG Always Live] Alerte de panne\nAppareil : {device}\nTunnel : {tunnel}\nIncident : {incident}\nFuseau horaire : {time_zone}\nDébut de la panne : {started_at}\nRésultat du rétablissement : {result}\n{retry}",
+      "result_failed": "Le premier rétablissement automatique a échoué (toujours aucun trafic après le redémarrage du tunnel)",
+      "result_not_executed": "Le rétablissement automatique n'a pas pu s'exécuter (le tunnel ne peut être ni démarré ni arrêté)",
+      "retry_limited": "WG Always Live réessaiera toutes les {interval} secondes, jusqu'à {limit} fois ; vous serez prévenu à nouveau lorsque le trafic sera revenu et stable depuis 2 minutes.",
+      "retry_forever": "WG Always Live continuera d'essayer toutes les {interval} secondes ; vous serez prévenu à nouveau lorsque le trafic sera revenu et stable depuis 2 minutes.",
+      "retry_none": "WG Always Live ne réessaiera pas automatiquement ; veuillez intervenir manuellement. Vous serez prévenu à nouveau lorsque le trafic sera revenu et stable depuis 2 minutes.",
+      "exhausted": "[WG Always Live] Tentatives arrêtées\nAppareil : {device}\nTunnel : {tunnel}\nIncident : {incident}\nFuseau horaire : {time_zone}\nDébut de la panne : {started_at}\n{retries} tentatives automatiques effectuées, limite atteinte ; le rétablissement automatique est arrêté. Veuillez intervenir manuellement ; vous serez prévenu à nouveau lorsque le trafic sera revenu et stable depuis 2 minutes.",
+      "recovered": "[WG Always Live] Rétabli\nAppareil : {device}\nTunnel : {tunnel}\nIncident : {incident}\nFuseau horaire : {time_zone}\nDébut de la panne : {started_at}\nRétabli à : {recovered_at}\nLe trafic est revenu et stable depuis 2 minutes.",
+      "test": "[WG Always Live] Notification de test\nCeci est un message de test et n'indique aucune panne du VPN.\nAppareil : {device}\nFuseau horaire : {time_zone}\nHeure : {time}",
+      "unnamed_device": "(appareil sans nom)"
+    }
+  },
+  {
+    "tag": "ru",
+    "name": "Русский",
+    "templates": {
+      "id": "ru/17ab0c81",
+      "formal": "[WG Always Live] Сбой туннеля\nУстройство: {device}\nТуннель: {tunnel}\nИнцидент: {incident}\nЧасовой пояс: {time_zone}\nСбой начался: {started_at}\nРезультат восстановления: {result}\n{retry}",
+      "result_failed": "Первое автоматическое восстановление не удалось (после перезапуска туннеля трафика по-прежнему нет)",
+      "result_not_executed": "Автоматическое восстановление не удалось выполнить (туннель нельзя запустить или остановить)",
+      "retry_limited": "WG Always Live будет повторять попытки каждые {interval} с, максимум: {limit}; когда трафик вернётся и продержится 2 минуты, вы получите ещё одно уведомление.",
+      "retry_forever": "WG Always Live будет повторять попытки каждые {interval} с; когда трафик вернётся и продержится 2 минуты, вы получите ещё одно уведомление.",
+      "retry_none": "WG Always Live не будет повторять попытки автоматически; устраните неполадку вручную. Когда трафик вернётся и продержится 2 минуты, вы получите ещё одно уведомление.",
+      "exhausted": "[WG Always Live] Повторные попытки прекращены\nУстройство: {device}\nТуннель: {tunnel}\nИнцидент: {incident}\nЧасовой пояс: {time_zone}\nСбой начался: {started_at}\nАвтоматических повторов выполнено: {retries}, лимит исчерпан; автоматическое восстановление остановлено. Устраните неполадку вручную; когда трафик вернётся и продержится 2 минуты, вы получите ещё одно уведомление.",
+      "recovered": "[WG Always Live] Работа восстановлена\nУстройство: {device}\nТуннель: {tunnel}\nИнцидент: {incident}\nЧасовой пояс: {time_zone}\nСбой начался: {started_at}\nВосстановлено: {recovered_at}\nТрафик вернулся и стабилен уже 2 минуты.",
+      "test": "[WG Always Live] Тестовое уведомление\nЭто тестовое сообщение, оно не означает сбой VPN.\nУстройство: {device}\nЧасовой пояс: {time_zone}\nВремя: {time}",
+      "unnamed_device": "(устройство без имени)"
+    }
+  },
+  {
+    "tag": "id",
+    "name": "Bahasa Indonesia",
+    "templates": {
+      "id": "id/62055b09",
+      "formal": "[WG Always Live] Peringatan gangguan\nPerangkat: {device}\nTunnel: {tunnel}\nInsiden: {incident}\nZona waktu: {time_zone}\nGangguan dimulai: {started_at}\nHasil pemulihan: {result}\n{retry}",
+      "result_failed": "Pemulihan otomatis pertama gagal (masih tidak ada lalu lintas setelah tunnel dimulai ulang)",
+      "result_not_executed": "Pemulihan otomatis tidak dapat dijalankan (tunnel tidak dapat dimulai atau dihentikan)",
+      "retry_limited": "WG Always Live akan mencoba lagi setiap {interval} detik, maksimal {limit} kali; Anda akan diberi tahu lagi setelah lalu lintas pulih dan stabil selama 2 menit.",
+      "retry_forever": "WG Always Live akan terus mencoba setiap {interval} detik; Anda akan diberi tahu lagi setelah lalu lintas pulih dan stabil selama 2 menit.",
+      "retry_none": "WG Always Live tidak akan mencoba lagi secara otomatis; mohon tangani secara manual. Anda akan diberi tahu lagi setelah lalu lintas pulih dan stabil selama 2 menit.",
+      "exhausted": "[WG Always Live] Percobaan ulang dihentikan\nPerangkat: {device}\nTunnel: {tunnel}\nInsiden: {incident}\nZona waktu: {time_zone}\nGangguan dimulai: {started_at}\nSudah mencoba ulang secara otomatis {retries} kali dan mencapai batas; pemulihan otomatis dihentikan. Mohon tangani secara manual; Anda akan diberi tahu lagi setelah lalu lintas pulih dan stabil selama 2 menit.",
+      "recovered": "[WG Always Live] Sudah pulih\nPerangkat: {device}\nTunnel: {tunnel}\nInsiden: {incident}\nZona waktu: {time_zone}\nGangguan dimulai: {started_at}\nPulih pada: {recovered_at}\nLalu lintas sudah kembali dan stabil selama 2 menit.",
+      "test": "[WG Always Live] Notifikasi uji\nIni adalah pesan uji dan tidak menandakan adanya gangguan VPN.\nPerangkat: {device}\nZona waktu: {time_zone}\nWaktu: {time}",
+      "unnamed_device": "(perangkat tanpa nama)"
+    }
+  },
+  {
+    "tag": "vi",
+    "name": "Tiếng Việt",
+    "templates": {
+      "id": "vi/9bb9d75a",
+      "formal": "[WG Always Live] Cảnh báo sự cố\nThiết bị: {device}\nĐường hầm: {tunnel}\nSự cố: {incident}\nMúi giờ: {time_zone}\nSự cố bắt đầu lúc: {started_at}\nKết quả khôi phục: {result}\n{retry}",
+      "result_failed": "Lần khôi phục tự động đầu tiên không thành công (vẫn không có lưu lượng sau khi khởi động lại đường hầm)",
+      "result_not_executed": "Không thể chạy khôi phục tự động (không thể khởi động hoặc dừng đường hầm)",
+      "retry_limited": "WG Always Live sẽ thử lại sau mỗi {interval} giây, tối đa {limit} lần; bạn sẽ nhận được thông báo khác khi lưu lượng trở lại và ổn định trong 2 phút.",
+      "retry_forever": "WG Always Live sẽ tiếp tục thử lại sau mỗi {interval} giây; bạn sẽ nhận được thông báo khác khi lưu lượng trở lại và ổn định trong 2 phút.",
+      "retry_none": "WG Always Live sẽ không tự động thử lại; vui lòng xử lý thủ công. Bạn sẽ nhận được thông báo khác khi lưu lượng trở lại và ổn định trong 2 phút.",
+      "exhausted": "[WG Always Live] Đã dừng thử lại\nThiết bị: {device}\nĐường hầm: {tunnel}\nSự cố: {incident}\nMúi giờ: {time_zone}\nSự cố bắt đầu lúc: {started_at}\nĐã tự động thử lại {retries} lần và đạt giới hạn; khôi phục tự động đã dừng. Vui lòng xử lý thủ công; bạn sẽ nhận được thông báo khác khi lưu lượng trở lại và ổn định trong 2 phút.",
+      "recovered": "[WG Always Live] Đã khôi phục\nThiết bị: {device}\nĐường hầm: {tunnel}\nSự cố: {incident}\nMúi giờ: {time_zone}\nSự cố bắt đầu lúc: {started_at}\nKhôi phục lúc: {recovered_at}\nLưu lượng đã trở lại và ổn định trong 2 phút.",
+      "test": "[WG Always Live] Thông báo thử nghiệm\nĐây là tin nhắn thử nghiệm và không có nghĩa là VPN gặp sự cố.\nThiết bị: {device}\nMúi giờ: {time_zone}\nThời gian: {time}",
+      "unnamed_device": "(thiết bị chưa đặt tên)"
+    }
+  }
+]
