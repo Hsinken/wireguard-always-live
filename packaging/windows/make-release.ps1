@@ -507,9 +507,16 @@ function Find-BuildPaths([string] $Folder, [object[]] $Forbidden) {
 
 function Invoke-Main {
 $invoked = (Get-Location).ProviderPath
+# The repository first, with no link or junction anywhere in its path, so
+# nothing is read or deleted through one.
+try {
+    $repository = Resolve-RealFolder $invoked $Root
+} catch {
+    Stop-Safe "make-release.ps1: the repository's folder cannot be used: $(Get-SafeMessage $_ 'it could not be read'); nothing was deleted or built"
+}
 # The release's name, from the version as written, before anything else.
 try {
-    $workspace = [IO.File]::ReadAllText((Join-Path $Root 'Cargo.toml'))
+    $workspace = [IO.File]::ReadAllText((Join-Path $repository 'Cargo.toml'))
 } catch {
     Stop-Safe 'make-release.ps1: Cargo.toml could not be read'
 }
@@ -521,7 +528,7 @@ if ($version -notmatch '^\d+\.\d+\.\d+$') {
     Stop-Safe 'make-release.ps1: the version is not a plain name; nothing was deleted or built'
 }
 $name = "wgal-$version-windows-x64"
-$dist = Join-Path $Root 'dist'
+$dist = Join-Path $repository 'dist'
 $stage = Join-Path $dist $name
 $zip = Join-Path $dist "$name.zip"
 foreach ($place in @($dist, $stage, $zip)) {
@@ -541,11 +548,6 @@ $pushed = $false
 $finished = $false
 try {
     if (-not $env:USERPROFILE) { Stop-Safe 'make-release.ps1: USERPROFILE is not set' }
-    try {
-        $repository = Resolve-RealFolder $invoked $Root
-    } catch {
-        Stop-Safe "make-release.ps1: the repository's folder cannot be used: $(Get-SafeMessage $_ 'it could not be read')"
-    }
     try {
         $profileFolder = Resolve-RealFolder $invoked $env:USERPROFILE
     } catch {

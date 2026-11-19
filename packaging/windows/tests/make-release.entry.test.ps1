@@ -409,12 +409,24 @@ try {
         Check 'a profile folder through a junction: the path is not printed' (& $noPath $r)
         $r = Invoke-Release @{ CARGO_HOME = (Join-Path $profileLink '.cargo') }
         Check "Cargo's home through a junction: refused" ($r.Code -ne 0 -and $r.Out -like '*link or a junction*')
+        # Through a junction to the repository, or to a folder above it:
+        # refused before anything is deleted there.
+        $r = Invoke-Release
+        Check 'before the repository junction refusals: the release is there' ($r.Code -eq 0 -and (Test-Path -LiteralPath $zip))
+        [IO.File]::WriteAllText((Join-Path $dist 'sentinel.txt'), 'keep')
         $repoLink = Join-Path $top 'repo link'
         New-Item -ItemType Junction -Path $repoLink -Target $work | Out-Null
         $junctions += $repoLink
-        $r = Invoke-Release -Script (Join-Path $repoLink 'packaging\windows\make-release.ps1') -From $repoLink
-        Check 'the repository through a junction: refused' ($r.Code -ne 0 -and $r.Out -like '*link or a junction*')
-        Check 'the repository through a junction: nothing built' (& $nothingBuilt)
+        $parentLink = Join-Path $top 'parent link'
+        New-Item -ItemType Junction -Path $parentLink -Target (Split-Path $work) | Out-Null
+        $junctions += $parentLink
+        foreach ($through in @(@('the repository', $repoLink), @('a folder above the repository', (Join-Path $parentLink (Split-Path $work -Leaf))))) {
+            $r = Invoke-Release -Script (Join-Path $through[1] 'packaging\windows\make-release.ps1') -From $through[1]
+            Check "$($through[0]) through a junction: refused" ($r.Code -ne 0 -and $r.Out -like '*link or a junction*')
+            Check "$($through[0]) through a junction: nothing built" (& $nothingBuilt)
+            Check "$($through[0]) through a junction: the release there stays" ((Test-Path -LiteralPath $zip) -and (Test-Path -LiteralPath $stage) -and (Test-Path -LiteralPath (Join-Path $dist 'sentinel.txt')))
+        }
+        Remove-Item -LiteralPath (Join-Path $dist 'sentinel.txt')
 
         # Refused variables build nothing, and the same-name release goes
         # first; other files in dist\ stay.
