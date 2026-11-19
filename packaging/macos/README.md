@@ -22,16 +22,25 @@ something goes wrong.
 >   The list's format and the status's were read on that Mac without
 >   changing anything.
 > - 4.2.2 is installed on that Mac (2026-11-20): its watchdog lists both
->   tunnels and reads a registered tunnel's state as connected. Resolving
->   the interface and probing through it are not tried yet (no recovery
->   check target is set).
-> - Two things must be verified on a real Mac as the LaunchAgent, not
->   just tried in Terminal, and are not done yet (NOT RUN):
->   - connecting and disconnecting with `scutil --nc`;
->   - reading the Keychain after the screen locks.
-> - Until a probe bound to the tunnel's interface is proven on a Mac, the
->   light is never green and automatic recovery cannot be turned on
->   ([docs/testing.md](../../docs/testing.md)).
+>   tunnels and reads a registered tunnel's state as connected.
+> - The same day the bound probe was tested there with 4.2.2, through its
+>   watchdog as the LaunchAgent, on the one connected tunnel
+>   ([docs/testing.md](../../docs/testing.md), M1 to M6): the target
+>   answered through the tunnel before and after a stop and start; a
+>   silent address in the tunnel's routes got no reply; the LAN gateway
+>   and the Mac's LAN address were refused before sending; the watchdog
+>   stopped and started the tunnel within 30 s, without a prompt, and
+>   acted after the SSH session that stopped it had ended: PASS. One check
+>   did not pass: the tunnel's own address was not refused (its route has
+>   the `LOCAL` flag), and one echo was sent to it; no reply came back.
+> - 4.3.0 refuses such a route and, by the owner's decision of 2026-11-20,
+>   counts the bound probe: once the recovery check target has answered
+>   through the tunnel, the light can turn green and automatic recovery can
+>   be turned on. The same checks run again on the installed 4.3.0 decide
+>   whether this stays; until they pass, it is not "accepted on a device".
+> - Not verified on a real Mac yet (NOT RUN): reading the Keychain after
+>   the screen locks; two tunnels at once; a fault that automatic recovery
+>   has to repair.
 > - Also not tested on a real Mac yet (NOT RUN): the
 >   recovery that renames the previous app back, the refusal to start once
 >   the new version may have run, turning the start at login off and on

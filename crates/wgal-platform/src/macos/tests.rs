@@ -832,12 +832,122 @@ fn a_route_elsewhere_or_none_is_a_mismatch() {
     assert_eq!(adapter.runner().pending(), 0);
 }
 
+/// The route to the tunnel's own address leaves through the tunnel, with
+/// the `LOCAL` flag (on-device check, 2026-11-20): it is refused, and
+/// nothing but the status and the route are read, so no probe is sent.
+#[test]
+fn a_route_to_an_address_of_this_computer_is_a_mismatch() {
+    let adapter = mac();
+    let tunnel = resolved(&adapter, B1, "nc_status_connected.txt");
+    status_now(&adapter, "nc_status_connected.txt");
+    reply(&adapter, 0, &fixture("route_local.txt"));
+    let own = TargetAddress::new(Ipv4Addr::new(192, 0, 2, 10)).unwrap();
+    assert_eq!(
+        kind(adapter.check_route(&tunnel, own)),
+        AdapterErrorKind::RouteMismatch
+    );
+    assert_eq!(adapter.runner().pending(), 0);
+    assert_eq!(
+        argv(&adapter),
+        [
+            scutil(&["--nc", "status", B1]),
+            scutil(&["--nc", "status", B1]),
+            (
+                "/sbin/route".to_owned(),
+                vec!["-n".to_owned(), "get".into(), "192.0.2.10".into()]
+            ),
+        ]
+    );
+}
+
+/// The shapes a Mac printed for a target behind the tunnel: a cloned host
+/// route and a network route.
+#[test]
+fn routes_a_mac_prints_through_the_tunnel_are_evidence() {
+    for name in ["route_utun4_cloned.txt", "route_utun4_cloning.txt"] {
+        let adapter = mac();
+        let tunnel = resolved(&adapter, B1, "nc_status_connected.txt");
+        status_now(&adapter, "nc_status_connected.txt");
+        reply(&adapter, 0, &fixture(name));
+        status_now(&adapter, "nc_status_connected.txt");
+        let evidence = adapter.check_route(&tunnel, target()).unwrap();
+        assert_eq!(evidence.interface_name, "utun4", "{name}");
+        assert_eq!(adapter.runner().pending(), 0, "{name}");
+    }
+}
+
+/// `route_utun4.txt` with other flags.
+fn route_with_flags(flags: &str) -> String {
+    let route = fixture("route_utun4.txt");
+    assert!(route.contains("flags: <UP,DONE,STATIC,PRCLONING>\n"));
+    route.replace("<UP,DONE,STATIC,PRCLONING>", flags)
+}
+
+fn check_route_with_flags(flags: &str) -> Result<RouteEvidence, AdapterError> {
+    let adapter = mac();
+    let tunnel = resolved(&adapter, B1, "nc_status_connected.txt");
+    status_now(&adapter, "nc_status_connected.txt");
+    reply(&adapter, 0, &route_with_flags(flags));
+    status_now(&adapter, "nc_status_connected.txt");
+    adapter.check_route(&tunnel, target())
+}
+
+#[test]
+fn a_route_that_is_down_or_reaches_no_single_remote_host_is_a_mismatch() {
+    for flags in [
+        "<DONE,STATIC,PRCLONING>",
+        "<UP,HOST,DONE,LOCAL>",
+        "<UP,DONE,BROADCAST>",
+        "<UP,DONE,MULTICAST>",
+        "<UP,DONE,STATIC,BLACKHOLE>",
+        "<UP,DONE,STATIC,REJECT>",
+    ] {
+        assert_eq!(
+            kind(check_route_with_flags(flags)),
+            AdapterErrorKind::RouteMismatch,
+            "{flags}"
+        );
+    }
+}
+
+#[test]
+fn route_flags_are_read_strictly() {
+    let many = |n: usize| {
+        let mut names = vec!["UP".to_owned()];
+        names.extend((1..n).map(|i| format!("F{i}")));
+        format!("<{}>", names.join(","))
+    };
+    for flags in [format!("<UP,{}>", "A".repeat(16)), many(32)] {
+        assert!(check_route_with_flags(&flags).is_ok(), "{flags}");
+    }
+    for flags in [
+        format!("<UP,{}>", "A".repeat(17)),
+        many(33),
+        "<UP,D\u{d6}NE>".to_owned(),
+        "<UP,DO_NE>".to_owned(),
+        "<UP,,DONE>".to_owned(),
+        "<UP,DONE,UP>".to_owned(),
+        "UP,DONE".to_owned(),
+        "<UP,DONE".to_owned(),
+        "<>".to_owned(),
+        String::new(),
+    ] {
+        assert_eq!(
+            kind(check_route_with_flags(&flags)),
+            AdapterErrorKind::ParseError,
+            "{flags:?}"
+        );
+    }
+}
+
 #[test]
 fn malformed_route_output_is_a_parse_error() {
     for name in [
         "route_duplicate_interface.txt",
         "route_no_interface.txt",
         "route_other_target.txt",
+        "route_no_flags.txt",
+        "route_duplicate_flags.txt",
     ] {
         let adapter = mac();
         let tunnel = resolved(&adapter, B1, "nc_status_connected.txt");
@@ -900,15 +1010,41 @@ fn no_reply_is_reported_only_when_ping_says_so() {
 
 #[test]
 fn probe_failures_are_errors_not_unreachable_targets() {
+    let stderr = |exit_code: i32, text: &str| {
+        Ok(Output {
+            exit_code: Some(exit_code),
+            stderr: text.as_bytes().to_vec(),
+            ..Output::default()
+        })
+    };
     let cases: Vec<(Result<Output, ExecError>, AdapterErrorKind)> = vec![
+        // No such interface: exit 68, or 1 as on macOS 27.2.1 (on-device
+        // check, 2026-11-20), and only as the whole line.
         (
-            Ok(Output {
-                exit_code: Some(68),
-                stderr: b"ping: bad interface name\n".to_vec(),
-                ..Output::default()
-            }),
+            stderr(68, "ping: bad interface name\n"),
             AdapterErrorKind::NotFound,
         ),
+        (
+            stderr(1, "ping: bad interface name\n"),
+            AdapterErrorKind::NotFound,
+        ),
+        (
+            stderr(68, "ping: bad interface name: utun4\n"),
+            AdapterErrorKind::ParseError,
+        ),
+        (
+            stderr(1, "ping: bad interface name: utun4\n"),
+            AdapterErrorKind::ParseError,
+        ),
+        (
+            stderr(1, "ping: socket: Operation not permitted\n"),
+            AdapterErrorKind::PermissionDenied,
+        ),
+        (
+            stderr(1, "ping: something else went wrong\n"),
+            AdapterErrorKind::ParseError,
+        ),
+        (stderr(1, ""), AdapterErrorKind::ParseError),
         (
             Ok(Output {
                 exit_code: Some(77),
@@ -1123,15 +1259,23 @@ fn tcp_probes_are_unsupported_and_run_nothing() {
 
 // capabilities and metrics
 
+/// Only what was proven on a Mac (`docs/testing.md`, 2026-11-20; made
+/// `Supported` by the owner's decision, see the module documentation) is
+/// `Supported`: the bound ICMP probe. TCP probes and metrics are not
+/// implemented; the rest stays `Unknown`, and no number of tunnels side by
+/// side is claimed.
 #[test]
-fn claims_nothing_that_was_not_proven_on_a_mac() {
+fn only_the_bound_icmp_probe_is_proven_on_a_mac() {
     let capabilities = mac().capabilities();
-    assert_eq!(capabilities.query_state, Capability::Unknown);
-    assert_eq!(capabilities.start_stop, Capability::Unknown);
-    assert_eq!(capabilities.bound_icmp_probe, Capability::Unknown);
-    assert_eq!(capabilities.background_operation, Capability::Unknown);
-    assert_eq!(capabilities.bound_tcp_probe, Capability::Unsupported);
-    assert_eq!(capabilities.read_metrics, Capability::Unsupported);
+    assert_eq!(
+        capabilities,
+        AdapterCapabilities {
+            bound_icmp_probe: Capability::Supported,
+            bound_tcp_probe: Capability::Unsupported,
+            read_metrics: Capability::Unsupported,
+            ..AdapterCapabilities::UNKNOWN
+        }
+    );
     assert_eq!(capabilities.verified_concurrent_tunnels, 0);
 }
 

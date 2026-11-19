@@ -1,7 +1,8 @@
 //! One ICMP echo bound to a tunnel interface with Apple's `ping -b`, which
 //! sets `IP_BOUND_IF` (unlike `-I`, which on macOS selects the multicast
 //! interface). Exit status follows `ping(8)`: 0 a reply was heard, 2 none
-//! was, anything else an error from `<sysexits.h>`.
+//! was, anything else an error from `<sysexits.h>`, except that a `-b` that
+//! names no interface exits with 1 on macOS 27.2.1.
 
 use std::net::Ipv4Addr;
 use std::time::Duration;
@@ -20,6 +21,9 @@ pub const MAX_WAIT: Duration = Duration::from_secs(30);
 const EX_USAGE: i32 = 64;
 const EX_NOHOST: i32 = 68;
 const EX_NOPERM: i32 = 77;
+/// What ping exits with on macOS 27.2.1 when `-b` names no interface
+/// (on-device check, 2026-11-20); earlier releases exit with `EX_NOHOST`.
+const EX_NO_INTERFACE: i32 = 1;
 
 /// `-n -b <interface> -c 1 -W <ms> -t <s> <target>`: numeric output, bound to
 /// the interface, one echo, wait up to `timeout` for the reply and exit one
@@ -79,7 +83,7 @@ pub fn interpret(output: &Output, target: TargetAddress) -> Result<ProbeOutcome,
             no_reply_summary(stdout, target.get()).map_err(malformed)?;
             Ok(ProbeOutcome::NoReply)
         }
-        Some(EX_NOHOST) if stderr.contains("bad interface name") => Err(AdapterError::new(
+        Some(EX_NOHOST | EX_NO_INTERFACE) if names_no_interface(&stderr) => Err(AdapterError::new(
             AdapterErrorKind::NotFound,
             "the interface no longer exists",
         )),
@@ -93,6 +97,14 @@ pub fn interpret(output: &Output, target: TargetAddress) -> Result<ProbeOutcome,
         )),
         _ => Err(malformed(Malformed("unexpected exit status"))),
     }
+}
+
+/// Whether ping said that `-b` names no interface: the whole line
+/// `ping: bad interface name`, not those words inside another line.
+fn names_no_interface(stderr: &str) -> bool {
+    stderr
+        .lines()
+        .any(|line| line == "ping: bad interface name")
 }
 
 fn denied() -> AdapterError {

@@ -34,9 +34,45 @@
 //!   them.
 //! - `scutil --nc show` is never run: it prints the configuration itself.
 //!
-//! Nothing here has been proven on a Mac yet; `docs/testing.md` lists the
-//! on-device checks that must pass before any capability is reported as
-//! supported.
+//!
+//! # Bound probes (`bound_icmp_probe`)
+//!
+//! A probe is `ping -n -b <utun>` (`IP_BOUND_IF`), after `route -n get` has
+//! named the same `utun` for the target with a route that is up and is not
+//! to an address of this computer (`LOCAL`), a broadcast or multicast
+//! address, nor one that drops or rejects what is sent; the core checks the
+//! route again after the probe and discards the reply if it moved.
+//! `bound_icmp_probe` was `Unknown` until the on-device tests summarized in
+//! `docs/testing.md`. It is `Supported` since 4.3.0, by the owner's decision
+//! of 2026-11-20, after these ran with 4.2.2 on a one-tunnel Mac (macOS
+//! 27.2.1) through the installed watchdog, the user's own LaunchAgent, end
+//! to end: the target answered through the tunnel before and after a stop
+//! and start; a silent address inside the tunnel's routes got no reply
+//! (`NoReply`); the LAN gateway and the Mac's LAN address were refused
+//! before sending (`RouteMismatch`); the tunnel stopped and started within
+//! 30 s through the watchdog, without a prompt, its `ConnectCount` higher
+//! after; after the SSH session that stopped it had ended, a request from a
+//! job left running connected it again through the watchdog; the
+//! watchdog's folder and socket are the user's alone.
+//!
+//! One check did not pass on 4.2.2: the tunnel's own address routes through
+//! the tunnel with the `LOCAL` flag, which 4.2.2 did not read, so one echo
+//! was sent to it (no reply came back). 4.3.0 refuses such a route, and
+//! reads exit 1 with `ping: bad interface name`, what this macOS prints for
+//! an interface that no longer exists, as `NotFound` (68 before). The same
+//! checks run again on the installed 4.3.0 decide whether this stays
+//! `Supported`; until they pass, this is not accepted on a device.
+//!
+//! Still unproven: two tunnels and overlapping routes; a probe through an
+//! interface that vanished during it (fakes only); automatic recovery's
+//! fault path, for which no authorized way to silence the target exists.
+//! When the Network Extension stalls while `scutil` still says `Connected`,
+//! `ping` may print a `sendto` error that is not listed in `ping.rs`; that
+//! is read as `ParseError` (the probe is unavailable), so it neither starts
+//! automatic recovery nor sends a notification, until a Mac shows what it
+//! prints. `query_state`, `start_stop` and `background_operation` stay
+//! `Unknown`, as on the other platforms: the core does not need them to be
+//! `Supported`.
 
 #[cfg(target_os = "macos")]
 mod final_path;
@@ -90,10 +126,12 @@ pub const COUNT_BITS: u32 = 48;
 pub const MAX_CONFIGURATIONS: usize = 1024;
 const _: () = assert!(MAX_CONFIGURATIONS <= 1 << (u64::BITS - COUNT_BITS));
 
-/// What this adapter claims before any on-device check. TCP probes and
-/// metrics are not implemented, so those are `Unsupported`; everything else
-/// is `Unknown` until the capability checks pass on a Mac.
+/// What this adapter claims. The bound ICMP probe is `Supported` (the
+/// on-device checks and the owner's decision in the module documentation);
+/// TCP probes and metrics are not implemented, so those are `Unsupported`;
+/// everything else stays `Unknown`.
 pub const CAPABILITIES: AdapterCapabilities = AdapterCapabilities {
+    bound_icmp_probe: Capability::Supported,
     bound_tcp_probe: Capability::Unsupported,
     read_metrics: Capability::Unsupported,
     ..AdapterCapabilities::UNKNOWN
