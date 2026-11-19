@@ -64,15 +64,17 @@ readonly record=target/release/wgal-build.txt
 
 # The build record for the given files as they are now: the commit, the
 # version and each file's SHA-256 (a missing file hashes as "missing").
+# Fails when a hash fails, whatever it printed.
 build_record() { # commit version file...
-    local file
+    local file sum
     echo "commit $1"
     echo "version $2"
     echo "paths rewritten as /cargo and /wgal"
     shift 2
     for file in "$@"; do
         if [ -f "$file" ]; then
-            sha256sum -- "$file"
+            sum=$(sha256sum -- "$file") || return 1
+            echo "$sum"
         else
             echo "missing  $file"
         fi
@@ -87,8 +89,11 @@ check_record() { # commit version file...
         echo "there is no build record ($record); build once without --no-build"
         return 1
     fi
-    local recorded
-    recorded=$(sed -n 's/^commit //p' "$record")
+    local recorded expected actual
+    if ! recorded=$(sed -n 's/^commit //p' "$record" 2>/dev/null); then
+        echo "the build record ($record) could not be read"
+        return 1
+    fi
     # What a record says is not repeated: it may hold anything.
     if ! [[ "$recorded" =~ ^[0-9a-f]{40}$ ]]; then
         echo "the build record ($record) is not one this script wrote; build once without --no-build"
@@ -98,16 +103,39 @@ check_record() { # commit version file...
         echo "the programs were built from another commit, not $1"
         return 1
     fi
-    if [ "$(build_record "$@")" != "$(cat "$record")" ]; then
+    if ! expected=$(build_record "$@"); then
+        echo "the programs could not be hashed"
+        return 1
+    fi
+    if ! actual=$(cat -- "$record" 2>/dev/null); then
+        echo "the build record ($record) could not be read"
+        return 1
+    fi
+    if [ "$expected" != "$actual" ]; then
         echo "a program changed since it was built, or the version differs from the record"
         return 1
     fi
 }
 
-# The folder as an absolute path without symbolic links, a relative path
-# taken from the first folder; fails if it does not exist.
-real_dir() { # from folder
-    (cd -- "$1" 2>/dev/null && cd -- "$2" 2>/dev/null && pwd -P)
+# Sets the named variable to the command's output without its one final
+# newline, and nothing else removed: a command substitution alone drops
+# every trailing newline, which a folder's name may end with. Fails as the
+# command fails.
+output_of() { # variable command...
+    local __output
+    __output=$("${@:2}" && echo x) || return 1
+    __output=${__output%x}
+    printf -v "$1" '%s' "${__output%$'\n'}"
+}
+
+# Sets the named variable to the folder as an absolute path without
+# symbolic links, a relative path taken from the second argument; fails if
+# it does not exist.
+real_dir() { # variable from folder
+    local __dir
+    __dir=$(cd -- "$2" 2>/dev/null && cd -- "$3" 2>/dev/null && pwd -P && echo x) || return 1
+    __dir=${__dir%x}
+    printf -v "$1" '%s' "${__dir%$'\n'}"
 }
 
 has_control() { # text
@@ -354,6 +382,22 @@ scan_release() { # folder forbidden scratch
     esac
 }
 
+# Whether the archive's member names (one per line, a folder's with a final
+# /) are exactly the files under the release's folder, and none but its
+# folders: nothing beside it or outside it, and no name twice. Run in the
+# folder that holds the release's folder.
+members_match() { # listing name
+    local files dirs want_files want_dirs extra
+    files=$(awk '!/\/$/' <<<"$1" | LC_ALL=C sort) || return 1
+    dirs=$(awk '/\/$/ { sub(/\/$/, ""); print }' <<<"$1" | LC_ALL=C sort) || return 1
+    want_files=$(find "$2" -type f -print | LC_ALL=C sort) || return 1
+    want_dirs=$(find "$2" -type d -print | LC_ALL=C sort) || return 1
+    [ "$files" = "$want_files" ] || return 1
+    [ "$(LC_ALL=C sort -u <<<"$dirs")" = "$dirs" ] || return 1
+    extra=$(LC_ALL=C comm -23 <(printf '%s\n' "$dirs") <(printf '%s\n' "$want_dirs")) || return 1
+    [ -z "$extra" ]
+}
+
 # Adds the path to the forbidden list (the global $forbidden) under the
 # label, once.
 forbid() { # label path
@@ -376,8 +420,14 @@ checkout_state() {
 }
 
 main() {
+# Set by real_dir and output_of.
+root="" home_dir="" cargo_home="" top="" top_real=""
 invoked=$PWD
-root=$(cd "$(dirname "$0")/../.." && pwd -P)
+case "$0" in
+*/*) here=${0%/*} ;;
+*) here=. ;;
+esac
+real_dir root "$invoked" "$here/../.." || refuse "the repository's folder could not be read"
 build=1
 case "${1:-}" in
 "") ;;
@@ -388,6 +438,9 @@ case "${1:-}" in
     ;;
 esac
 
+if has_control "$root"; then
+    refuse "the repository's path has a control character; nothing was deleted or built"
+fi
 cd "$root"
 version=$(awk '/^\[workspace.package\]/{p=1; next} /^\[/{p=0} p && /^version *=/{gsub(/[" ]/, "", $0); sub(/version=/, "", $0); print; exit}' Cargo.toml)
 arch=$(uname -m)
@@ -414,11 +467,12 @@ cleanup() {
 trap cleanup EXIT
 
 [ -n "${HOME:-}" ] || refuse "HOME is not set"
-home_dir=$(real_dir "$invoked" "$HOME") || refuse "the home folder does not exist"
+real_dir home_dir "$invoked" "$HOME" || refuse "the home folder does not exist"
 cargo_given=${CARGO_HOME:-$HOME/.cargo}
-cargo_home=$(real_dir "$invoked" "$cargo_given") || refuse "Cargo's home folder was not found (CARGO_HOME, or ~/.cargo)"
-top=$(git rev-parse --show-toplevel 2>/dev/null) || refuse "git could not read the repository"
-[ "$(real_dir / "$top")" = "$root" ] || refuse "the script is not in the repository it runs in"
+real_dir cargo_home "$invoked" "$cargo_given" || refuse "Cargo's home folder was not found (CARGO_HOME, or ~/.cargo)"
+output_of top git rev-parse --show-toplevel 2>/dev/null || refuse "git could not read the repository"
+real_dir top_real / "$top" || refuse "git could not read the repository"
+[ "$top_real" = "$root" ] || refuse "the script is not in the repository it runs in"
 for path in "$root" "$home_dir" "$cargo_home" "$HOME" "$cargo_given"; do
     if has_control "$path"; then
         refuse "a folder's path has a control character; it cannot be written out of the programs"
@@ -491,12 +545,16 @@ tar --owner=0 --group=0 --numeric-owner -C "$work" -czf "$work/$name.tar.gz" "$n
 owners=$(tar -tvzf "$work/$name.tar.gz" 2>/dev/null | awk '{print $2}' | LC_ALL=C sort -u) ||
     refuse "the archive could not be listed; nothing was packed"
 [ "$owners" = "0/0" ] || refuse "the archive names an owner; nothing was packed"
+listing=$(tar -tzf "$work/$name.tar.gz" 2>/dev/null) || refuse "the archive could not be listed; nothing was packed"
+(cd "$work" && members_match "$listing" "$name") ||
+    refuse "the archive holds other files than the release; nothing was packed"
 mkdir "$work/check"
 tar -xzf "$work/$name.tar.gz" -C "$work/check" 2>/dev/null || refuse "the archive could not be unpacked; nothing was packed"
-packed_files=$(cd "$temp" && find . -print | LC_ALL=C sort) || refuse "the release could not be listed; nothing was packed"
-unpacked_files=$(cd "$work/check/$name" && find . -print | LC_ALL=C sort) || refuse "the archive could not be listed; nothing was packed"
+packed_files=$(cd "$work" && find "$name" -print | LC_ALL=C sort) || refuse "the release could not be listed; nothing was packed"
+unpacked_files=$(cd "$work/check" && find . -mindepth 1 -print | sed 's#^\./##' | LC_ALL=C sort) ||
+    refuse "the archive could not be listed; nothing was packed"
 [ "$packed_files" = "$unpacked_files" ] || refuse "the archive holds other files than the release; nothing was packed"
-scan_release "$work/check/$name" "$forbidden" "$work" || exit 65
+scan_release "$work/check" "$forbidden" "$work" || exit 65
 mv -- "$temp" "$stage"
 mv -- "$work/$name.tar.gz" "$archive"
 rm -rf -- "$work"

@@ -56,6 +56,11 @@ why=$(check_record "$commit" 4.2.1 "${programs[@]}") || true
 check "a record this script did not write is refused" test -n "$why"
 check "a record this script did not write: what it says is not repeated" test "${why/"$work"/}" = "$why"
 cp "$work/record.saved" "$record"
+# A hash that fails counts, whatever it printed.
+# shellcheck disable=SC2317 # called by build_record in the subshell
+check "a failing hash fails the record" test "$(sha256sum() { command sha256sum "$@"; return 1; }; build_record "$commit" 4.2.1 "${programs[@]}" >/dev/null && echo made || echo failed)" = failed
+# shellcheck disable=SC2317 # called by check_record in the subshell
+check "a failing hash is refused" test "$(sha256sum() { command sha256sum "$@"; return 1; }; check_record "$commit" 4.2.1 "${programs[@]}")" = "the programs could not be hashed"
 echo "another build of the same version" >target/release/wgal-mcp
 check "a changed program is refused" says "changed" "$commit" 4.2.1 "${programs[@]}"
 rm target/release/wgal-mcp
@@ -162,9 +167,18 @@ not() { ! "$@"; }
 # Paths: absolute, without symbolic links.
 mkdir -p "$work/real one"
 ln -s "real one" "$work/link"
-check "a link is resolved" test "$(real_dir "$work" link)" = "$(cd "$work/real one" && pwd -P)"
-check "a relative path is taken from the given folder" test "$(real_dir "$work/real one" ..)" = "$(cd "$work" && pwd -P)"
-check "a missing folder fails" not real_dir / "$work/missing"
+got=""
+real_dir got "$work" link
+check "a link is resolved" test "$got" = "$(cd "$work/real one" && pwd -P)"
+real_dir got "$work/real one" ..
+check "a relative path is taken from the given folder" test "$got" = "$(cd "$work" && pwd -P)"
+check "a missing folder fails" not real_dir got / "$work/missing"
+mkdir "$work/ends with a newline"$'\n'
+real_dir got "$work" "ends with a newline"$'\n'
+check "a folder whose name ends with a newline keeps it" test "$got" = "$(cd "$work" && pwd -P)/ends with a newline"$'\n'
+output_of got printf 'a\n\n'
+check "a command's output keeps all but its one final newline" test "$got" = "a"$'\n'
+check "a failing command's output fails" not output_of got false
 check "a control character is found" has_control "$(printf 'a\037b')"
 check "a newline is found" has_control "a
 b"
@@ -273,6 +287,35 @@ if [ "$(id -u)" -ne 0 ]; then
     check "an unreadable configuration's refusal names no path" test "$(config_refusal "$work/unreadable.toml" 2>&1)" = "it is not a readable file"
     chmod 600 "$work/unreadable.toml"
 fi
+# The archive's members: exactly the release's files, and none but its
+# folders, each once.
+mkdir -p "$work/members/rel/sub"
+touch "$work/members/rel/a" "$work/members/rel/sub/b"
+in_members() { (cd "$work/members" && members_match "$1" rel); }
+check "members: the release's files and folders" in_members "rel/
+rel/a
+rel/sub/
+rel/sub/b"
+check "members: the files without folder entries" in_members "rel/a
+rel/sub/b"
+check "members: a file beside the release's folder is refused" not in_members "rel/a
+rel/sub/b
+extra"
+check "members: a file outside it is refused" not in_members "rel/a
+rel/sub/b
+../x"
+check "members: a file twice is refused" not in_members "rel/a
+rel/a
+rel/sub/b"
+check "members: a folder twice is refused" not in_members "rel/
+rel/
+rel/a
+rel/sub/b"
+check "members: a folder that is not the release's is refused" not in_members "rel/a
+rel/sub/b
+other/"
+check "members: a missing file is refused" not in_members "rel/a"
+
 release_like "$work/rel"
 mkdir -p "$work/lists"
 scan_release "$work/rel" "$list" "$work/lists" >/dev/null 2>&1 || true
