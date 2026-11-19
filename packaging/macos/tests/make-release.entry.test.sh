@@ -51,14 +51,47 @@ done
 mkdir -p "$work/bin"
 cat >"$work/bin/ditto" <<'EOF'
 #!/usr/bin/env bash
-# ditto SRC DST, or ditto -c -k --keepParent SRC ZIP.
-if [ "$1" = "-c" ]; then
-    echo "fake zip of $4" >"$5"
-else
-    cp -R -- "$1" "$2"
-fi
+# Stand-in for ditto: copies (ditto [options] SRC DST), packs (ditto -c -k
+# [options] --keepParent SRC ARCHIVE; a tar file here) and unpacks (ditto
+# -x -k [options] ARCHIVE DST). FAKE_DITTO_EXTRA puts one more file in the
+# archive, as resource forks or extended attributes would (not named ._*:
+# macOS's own tar turns those back into attributes when it unpacks).
+set -euo pipefail
+mode=copy
+args=()
+for a in "$@"; do
+    case "$a" in
+    -c) mode=create ;;
+    -x) mode=extract ;;
+    -k | --keepParent | --norsrc | --noextattr | --noqtn | --noacl) ;;
+    -*)
+        echo "fake ditto: unknown option $a" >&2
+        exit 64
+        ;;
+    *) args+=("$a") ;;
+    esac
+done
+case "$mode" in
+copy) cp -R -- "${args[0]}" "${args[1]}" ;;
+create)
+    if [ -n "${FAKE_DITTO_EXTRA:-}" ]; then
+        printf '%s' "$FAKE_DITTO_EXTRA" >"${args[0]}/extra-entry"
+    fi
+    tar -cf "${args[1]}" -- "${args[0]}"
+    rm -f -- "${args[0]}/extra-entry"
+    ;;
+extract) tar -xf "${args[0]}" -C "${args[1]}" ;;
+esac
 EOF
-printf '#!/usr/bin/env bash\nexit 0\n' >"$work/bin/codesign"
+# codesign does nothing, but fails to verify the unpacked app when
+# FAKE_CODESIGN_FAIL is set.
+cat >"$work/bin/codesign" <<'EOF'
+#!/usr/bin/env bash
+if [ -n "${FAKE_CODESIGN_FAIL:-}" ] && [[ "$*" == *"/check/"* ]]; then
+    exit 1
+fi
+exit 0
+EOF
 cat >"$work/bin/fake-content.sh" <<'EOF'
 # The content of a fake program: its name, and the path FAKE_EMBED asks for
 # ("<program>:<home|homegiven|cargo|repo>:<utf8|utf16>").
@@ -137,6 +170,36 @@ if [ "\$sub" = status ]; then
 fi
 exec "$real_git" "\$@"
 EOF
+# tar without the owner options (FAKE_TAR_OWNER), or adding one more file
+# to the archive than the folder holds (FAKE_TAR_EXTRA, its content).
+mkdir -p "$work/tarbin"
+real_tar=$(command -v tar)
+cat >"$work/tarbin/tar" <<EOF
+#!/usr/bin/env bash
+args=()
+create=""
+dir=""
+prev=""
+for a in "\$@"; do
+    [ "\$prev" != -C ] || dir=\$a
+    prev=\$a
+    case "\$a" in
+    --owner=* | --group=* | --numeric-owner) [ -z "\${FAKE_TAR_OWNER:-}" ] || continue ;;
+    -czf) create=1 ;;
+    esac
+    args+=("\$a")
+done
+if [ -n "\$create" ] && [ -n "\${FAKE_TAR_EXTRA:-}" ]; then
+    last=\${!#}
+    printf '%s' "\$FAKE_TAR_EXTRA" >"\$dir/\$last/extra"
+    rc=0
+    "$real_tar" "\${args[@]}" || rc=\$?
+    rm -f -- "\$dir/\$last/extra"
+    exit "\$rc"
+fi
+exec "$real_tar" "\${args[@]}"
+EOF
+chmod +x "$work/tarbin/tar"
 # The hash tool, failing for the archive itself when FAKE_HASH_FAIL is set.
 real_hash=$(command -v shasum)
 cat >"$work/hashbin/shasum" <<EOF
@@ -162,7 +225,8 @@ echo "fake zh-TW guide" >"$repo/packaging/INSTALL.zh-TW.md"
 printf '[workspace.package]\nversion = "9.8.7"\n' >"$repo/Cargo.toml"
 echo "# fake lock file" >"$repo/Cargo.lock"
 echo '{ "name": "@wgal/desktop", "private": true }' >"$repo/apps/desktop/package.json"
-printf 'target/\ndist/\n' >"$repo/.gitignore"
+# The tests' Cargo configurations, in the checkout, are ignored by git.
+printf 'target/\ndist/\n.cargo/\n' >"$repo/.gitignore"
 cd "$repo"
 git init -q .
 git -c user.name=test -c user.email=test@example.invalid add -A
@@ -180,6 +244,7 @@ record() { # commit [version]
     {
         echo "commit $1"
         echo "version ${2:-9.8.7}"
+        echo "paths rewritten as /cargo and /wgal"
         shasum -a 256 -- "${programs[@]}"
     } >target/release/wgal-build.txt
 }
@@ -239,6 +304,12 @@ cp "$work/older" target/release/wgal-build.txt
 run --no-build
 check "a record without the command line: refused" refused_with "changed"
 check "a record without the command line: nothing packed" nothing_packed
+
+# A record this script did not write: what it says is not repeated.
+record "$work/secret"
+run --no-build
+check "a record this script did not write: refused" refused_with "is not one this script wrote"
+check "a record this script did not write: the path is not printed" no_path_printed
 
 # The same commit and programs, built as another version.
 record "$head" 9.8.6
@@ -356,6 +427,27 @@ run "FAKE_NEWFILE=$repo/made-by-the-build.rs"
 check "a new file from the build: refused" refused_with "the build changed the checkout"
 check "a new file from the build: nothing packed" nothing_packed
 rm -f "$repo/made-by-the-build.rs"
+
+# A file that is not in git, there before the build: refused, as the
+# checkout is not clean.
+echo "notes" >"$repo/notes.txt"
+run
+check "an untracked file before the build: refused" refused_with "untracked files"
+check "an untracked file before the build: nothing built" nothing_built
+check "an untracked file before the build: nothing packed" nothing_packed
+rm -f "$repo/notes.txt"
+
+# --- The archive (macOS): exactly the release's files, the app signed.
+run
+check "the archive is checked again after packing" test "$(grep -c '^Checked [0-9]* files: no build paths$' <<<"$out")" -eq 2
+run "FAKE_DITTO_EXTRA=$repo"
+check "an archive with another file: refused" refused_with "the archive holds other files than the release"
+check "an archive with another file: nothing packed" nothing_packed
+check "an archive with another file: the path is not printed" no_path_printed
+run FAKE_CODESIGN_FAIL=1
+check "an unpacked app that does not verify: refused" refused_with "the app in the archive is not validly signed"
+check "an unpacked app that does not verify: nothing packed" nothing_packed
+# --- End of the archive checks.
 
 # The last step failing leaves nothing either.
 run "PATH=$work/hashbin:$work/bin:$PATH" FAKE_HASH_FAIL=1
