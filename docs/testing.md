@@ -189,7 +189,13 @@ On the developer's computer:
   (`[VPN:com.wireguard.macos]`), and the parser accepted only a slash. Fixed
   in 4.2.2; the fixtures `nc_list_macos27.txt` and `nc_status_macos27.txt`
   copy the real layout and structure with invented values.
-- **Not proven**: anything that controls or probes the official app's VPN.
+- **PASS with 4.2.2** (installed on that Mac on 2026-11-20, checked read
+  only): the watchdog runs, lists both of the official app's tunnels, and
+  reads a registered tunnel's state as connected, as it is. The light is
+  gray (`not_configured`): no recovery check target is set, so no probe has
+  run.
+- **Not proven**: resolving the interface (name and `ConnectCount`), probes,
+  and anything that controls the official app's VPN.
 
 ### The on-device checks by number
 
@@ -217,7 +223,7 @@ where it stands.
 | U5 | Ubuntu: controlling one tunnel leaves the others alone | NOT RUN (one tunnel only) |
 | U6 | Ubuntu: the ownership checks at registration | PASS (indirect inside `/etc/wireguard`) |
 | U7 | Ubuntu: discovery tells `wg-quick` tunnels from other managers | PASS |
-| M1 | macOS: `scutil --nc list` and `status` match the parser | List: its format was read on macOS 27.2.1 (it writes a colon in the type) and the parser fixed in 4.2.2; discovery through the installed watchdog not yet run. Status: a de-identified copy of the real output parses (simulation); through the watchdog BLOCKED (needs a registered tunnel) |
+| M1 | macOS: `scutil --nc list` and `status` match the parser | List: PASS (4.2.2's installed watchdog lists both tunnels on macOS 27.2.1, 2026-11-20). Status: the state, PASS (a registered tunnel reads as connected, as it is); the interface name and `ConnectCount`, read only by a probe round, BLOCKED (no recovery check target set) |
 | M2 | macOS: the interface is found from the configuration each time; the connection count tells reconnects apart | BLOCKED (no authorized on-device run on a Mac yet) |
 | M3 | macOS: `ping -b` is bound to the interface | BLOCKED (no authorized on-device run on a Mac yet) |
 | M4 | macOS: routes, state and probes during a stop, with timestamps | BLOCKED (no authorized on-device run on a Mac yet) |
