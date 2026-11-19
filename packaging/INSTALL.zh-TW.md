@@ -387,6 +387,12 @@ Windows 上這兩個要在命令提示字元（`cmd.exe`）執行，不要用 Po
 
 建置腳本只寫 `target/` 與 `dist/`，不安裝任何東西。建好之後，照上面各平台的步驟安裝。
 
+發布包不能帶有建置它的電腦的資訊，所以每個腳本：
+
+- 編譯旗標或 Cargo 的輸出位置由外部設定時，拒絕建置，什麼都不建置：`RUSTFLAGS`、`CARGO_ENCODED_RUSTFLAGS`、`CARGO_BUILD_RUSTFLAGS`、`CARGO_TARGET_<triple>_RUSTFLAGS`、`CARGO_TARGET_DIR`、`CARGO_BUILD_TARGET_DIR` 或 `CARGO_BUILD_TARGET`，或 Cargo 設定檔（repo、`apps/desktop/src-tauri`、`apps/desktop`、`apps`、repo 以上的每一層，以及 Cargo 家目錄裡的 `.cargo/config.toml` 或 `.cargo/config`）提到 `rustflags` 或 `target-dir`，或有名為 `target` 的鍵。建置時請取消這些設定，或把檔案移開。在 Windows 上，repo、使用者資料夾或 Cargo 家目錄的路徑有任何一段是連結或 junction 時，也拒絕；
+- 建置時把 Cargo 家目錄與 repo 在程式裡寫成 `/cargo` 與 `/wgal`，並照提交的 `Cargo.lock` 建置；
+- 打包之前，在發布包的每一個檔案（含 `RELEASE.txt`）裡找家目錄（使用者資料夾）、Cargo 家目錄與 repo 的路徑。找到，或無法檢查時，什麼都不打包，並說明是哪個檔案、哪個資料夾、哪種編碼，不印出路徑本身。
+
 ## 腳本絕不做的事
 
 - 不啟動、停止、修改或刪除任何官方 WireGuard 的隧道、服務、設定或開機自動連線設定。唯一的例外是 Windows 的緊急復原：`revert.cmd`／`revert.ps1 -Tunnel <名稱>` 會結束 WGAL 服務，並把列出、目前停著的隧道啟動回來（見 Windows 的 `README.zh-TW.md`「緊急復原」）。Agent 不要自行執行它，要先取得使用者對那幾條隧道的明確同意。

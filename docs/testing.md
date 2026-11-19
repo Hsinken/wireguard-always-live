@@ -191,11 +191,38 @@ On the developer's computer:
   copy the real layout and structure with invented values.
 - **PASS with 4.2.2** (installed on that Mac on 2026-11-20, checked read
   only): the watchdog runs, lists both of the official app's tunnels, and
-  reads a registered tunnel's state as connected, as it is. The light is
-  gray (`not_configured`): no recovery check target is set, so no probe has
-  run.
-- **Not proven**: resolving the interface (name and `ConnectCount`), probes,
-  and anything that controls the official app's VPN.
+  reads a registered tunnel's state as connected, as it is. The light was
+  gray (`not_configured`) until a recovery check target was set, then red
+  (`path_unverified`): 4.2.2 does not count a bound probe on macOS.
+- **On-device checks with 4.2.2** (2026-11-20, that Mac, one connected
+  tunnel, through the installed watchdog, the user's own LaunchAgent; the
+  owner authorized stopping and starting that tunnel and a few probes to
+  addresses beside the target):
+  - **PASS**: the target answered a probe bound to the tunnel (M3); the
+    tunnel stopped and started through the watchdog within 30 s, without a
+    prompt, its interface read again and its `ConnectCount` one higher
+    (M2, M6); while it was stopped, nothing routed through its old
+    interface and nothing answered there, and it did not connect again by
+    itself (M4; M5 observed only); after the SSH session that stopped it
+    had ended, a request through the watchdog connected it again; a silent
+    address inside the tunnel's routes got `no_reply`; the LAN gateway and
+    the Mac's LAN address were refused before sending (`route_mismatch`);
+    the watchdog's folder and socket are the user's alone.
+  - **FAIL**: the tunnel's own address was not refused. Its route leaves
+    through the tunnel with the `LOCAL` flag, which 4.2.2 did not read, so
+    one echo was sent to it; it got no reply, not a false one. Fixed in
+    4.3.0: a route that is not up, or has `LOCAL`, `BROADCAST`,
+    `MULTICAST`, `BLACKHOLE` or `REJECT`, is refused.
+  - **Found**: on macOS 27.2.1, `ping -b` with an interface that does not
+    exist exits with 1 and `ping: bad interface name`, not 68; 4.3.0 reads
+    both as `NotFound`.
+- **4.3.0**: the bound ICMP probe is `Supported`, by the owner's decision
+  of 2026-11-20, although the check above failed on 4.2.2. The same checks
+  run again on the installed 4.3.0 decide whether it stays; until they
+  pass, this is not acceptance on a device.
+- **Not proven**: two tunnels; the Keychain while the screen is locked;
+  monitoring after the window quits or the screen locks; TCP probes; a
+  fault that automatic recovery has to repair.
 
 ### The on-device checks by number
 
@@ -223,17 +250,17 @@ where it stands.
 | U5 | Ubuntu: controlling one tunnel leaves the others alone | NOT RUN (one tunnel only) |
 | U6 | Ubuntu: the ownership checks at registration | PASS (indirect inside `/etc/wireguard`) |
 | U7 | Ubuntu: discovery tells `wg-quick` tunnels from other managers | PASS |
-| M1 | macOS: `scutil --nc list` and `status` match the parser | List: PASS (4.2.2's installed watchdog lists both tunnels on macOS 27.2.1, 2026-11-20). Status: the state, PASS (a registered tunnel reads as connected, as it is); the interface name and `ConnectCount`, read only by a probe round, BLOCKED (no recovery check target set) |
-| M2 | macOS: the interface is found from the configuration each time; the connection count tells reconnects apart | BLOCKED (no authorized on-device run on a Mac yet) |
-| M3 | macOS: `ping -b` is bound to the interface | BLOCKED (no authorized on-device run on a Mac yet) |
-| M4 | macOS: routes, state and probes during a stop, with timestamps | BLOCKED (no authorized on-device run on a Mac yet) |
-| M5 | macOS: On-Demand behaviour | BLOCKED (no authorized on-device run on a Mac yet) |
-| M6 | macOS: queries, starts and stops as the LaunchAgent | BLOCKED (no authorized on-device run on a Mac yet) |
-| M7 | macOS: monitoring goes on after the window quits | BLOCKED (no authorized on-device run on a Mac yet) |
-| M8 | macOS: probes and reconnects after the screen locks | BLOCKED (no authorized on-device run on a Mac yet) |
-| M9 | macOS: the Keychain while the screen is locked | BLOCKED (no authorized on-device run on a Mac yet) |
-| M10 | macOS: two, then three tunnels, each probed on its own; restarting one leaves the others alone | BLOCKED (no authorized on-device run on a Mac yet) |
-| M11 | macOS: whether a TCP probe can be bound to the interface | BLOCKED (no authorized on-device run on a Mac yet) |
+| M1 | macOS: `scutil --nc list` and `status` match the parser | PASS (4.2.2's installed watchdog on macOS 27.2.1, 2026-11-20): it lists both tunnels; it reads a registered tunnel's state, and, in its probe rounds, the interface name and `ConnectCount` |
+| M2 | macOS: the interface is found from the configuration each time; the connection count tells reconnects apart | PASS (4.2.2, 2026-11-20, one tunnel): read again after a reconnect, `ConnectCount` one higher |
+| M3 | macOS: `ping -b` is bound to the interface | 4.2.2, 2026-11-20: a reply from the target and `no_reply` from a silent address in the tunnel's routes, PASS; the LAN gateway and the Mac's LAN address refused before sending, PASS; the tunnel's own address not refused (no reply), FAIL, fixed in 4.3.0 and to be run again on the installed 4.3.0 |
+| M4 | macOS: routes, state and probes during a stop, with timestamps | PASS (4.2.2, 2026-11-20): over a 15 s stop, the state, the route and a probe on the old interface, each sample with its own times |
+| M5 | macOS: On-Demand behaviour | Observed only: no reconnect the test did not cause, during one 15 s stop (4.2.2, 2026-11-20); On-Demand itself NOT RUN |
+| M6 | macOS: queries, starts and stops as the LaunchAgent | PASS (4.2.2, 2026-11-20): a stop and a start through the watchdog, each within 30 s, without a prompt, one of them after the SSH session had ended |
+| M7 | macOS: monitoring goes on after the window quits | NOT RUN (not in the run the owner authorized on 2026-11-20) |
+| M8 | macOS: probes and reconnects after the screen locks | NOT RUN (not in the run the owner authorized on 2026-11-20) |
+| M9 | macOS: the Keychain while the screen is locked | NOT RUN (not in the run the owner authorized on 2026-11-20) |
+| M10 | macOS: two, then three tunnels, each probed on its own; restarting one leaves the others alone | NOT RUN (one tunnel only) |
+| M11 | macOS: whether a TCP probe can be bound to the interface | NOT RUN (not in the run the owner authorized on 2026-11-20) |
 
 ### What the adapters report
 
@@ -242,13 +269,16 @@ recovery only where the bound ICMP probe is `Supported`.
 
 | Capability | Windows | macOS | Ubuntu |
 |---|---|---|---|
-| Bound ICMP probe | Supported (on device, one tunnel) | Unknown | Supported (on device, one tunnel) |
+| Bound ICMP probe | Supported (on device, one tunnel) | Supported from 4.3.0 (owner's decision; one tunnel; one check to run again) | Supported (on device, one tunnel) |
 | Bound TCP probe | Unsupported | Unsupported | Unsupported |
 | Reading metrics | Unsupported | Unsupported | Unknown |
 | State queries, start and stop, background operation | Unknown | Unknown | Unknown |
 
-So on macOS the light is never green and automatic recovery cannot be turned
-on, until a bound probe is proven on a Mac. That is deliberate, not a fault.
+Before 4.3.0 the light is never green on macOS and automatic recovery cannot
+be turned on there; that was deliberate, not a fault. From 4.3.0 the
+owner's decision of 2026-11-20 makes the bound ICMP probe `Supported` (see
+"macOS" above).
 
-A capability changes only after its on-device checks pass, in a commit by
-the platform's package that cites them.
+A capability changes only after its on-device checks pass, or by the
+owner's decision (macOS in 4.3.0), in a commit by the platform's package
+that cites them.

@@ -193,7 +193,7 @@ WGAL 是為了補強 WireGuard 官方程式對斷線判斷的不足而設計的�
 
    第一行以 `WGAL watchdog <版本>` 開頭。
 
-請先讀[各平台狀態](#各平台狀態)：在 macOS 上，WGAL 目前還不會亮綠燈，也不能開啟自動復原。
+請先讀[各平台狀態](#各平台狀態)：在 macOS 上，綠燈與自動復原從 4.3.0 開始，還沒有在安裝好的 Mac 上檢查過。
 
 細節：[packaging/macos/README.zh-TW.md](packaging/macos/README.zh-TW.md)。
 
@@ -269,7 +269,7 @@ WGAL 是為了補強 WireGuard 官方程式對斷線判斷的不足而設計的�
 | Windows 11 | 在開發者的電腦上，視窗 2.2.1 與 WatchDog 2.3.1（統一版號之前的版本）用在真實的隧道上。4.2.1 還沒有在 Windows 發布 |
 | 沒有桌面的 Ubuntu（`--no-window`） | 4.2.1 安裝在一台測試伺服器上。那個建置是在原始碼搬到這個 repo 之前做的。見下表 |
 | 有桌面的 Ubuntu | 2.2.1 曾安裝在一台有桌面（GNOME）的測試電腦上。4.2.1 還沒有裝在有桌面的電腦上。伺服器上的結果不代表桌面 |
-| macOS | 原生建置在一台 Mac（macOS 27，Apple 晶片）上通過全部測試。2.2.1 的測試建置在那裡安裝、升級（刻意注入一次失敗）並移除過。4.2.1 裝在那台 Mac 上之後列不出隧道：macOS 27.2.1 把服務類型寫成冒號，它的解析器不接受。4.2.2（只發布 macOS）能讀：裝在那台 Mac 上之後，它的 WatchDog 列得出隧道，也讀得到已登記隧道的狀態。探測與控制官方 app 的 VPN 還沒有測試 |
+| macOS | 原生建置在一台 Mac（macOS 27，Apple 晶片）上通過全部測試。2.2.1 的測試建置在那裡安裝、升級（刻意注入一次失敗）並移除過。4.2.1 裝在那台 Mac 上之後列不出隧道：macOS 27.2.1 把服務類型寫成冒號，它的解析器不接受。4.2.2（只發布 macOS）能讀：裝在那台 Mac 上之後，它的 WatchDog 列得出隧道，也讀得到已登記隧道的狀態。在那台 Mac 上以 4.2.2 測試，綁定在一條隧道上的探測，以及經 WatchDog 的停止與啟動都通過；隧道自己的位址沒有被拒絕，4.3.0 修正。4.3.0 還沒有裝在那裡 |
 
 在 Ubuntu 測試伺服器上，以 4.2.1：
 
@@ -280,7 +280,7 @@ WGAL 是為了補強 WireGuard 官方程式對斷線判斷的不足而設計的�
 | 開啟自動復原 | |
 | WatchDog 重新啟動與重開機之後，設定都保留 | |
 
-**macOS 的限制**：綁定在隧道介面上的探測在 Mac 上證實之前，macOS 版不會亮綠燈，也不能開啟自動復原。這項能力是「未知」，不是「不支援」。
+**macOS 自 4.3.0 起**：依擁有者 2026-11-20 的決定，綁定在隧道介面上的探測算數，所以燈號可以變綠，也能開啟自動復原。有一項實機檢查在 4.2.2 上沒有通過（隧道自己的位址沒有被拒絕），4.3.0 修正；在安裝好的 4.3.0 上再通過之前，這不是在裝置上驗收過的結果。在 Mac 上還沒有證明的：兩條隧道，以及自動復原修不好的故障。
 
 各平台證明了什麼、怎麼證明的，見 [docs/testing.md](docs/testing.md)（英文）。替身測試的結果，從不當成真實電腦上的結果回報。
 
@@ -352,6 +352,8 @@ cargo test --workspace --locked
    | Windows | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging\windows\make-release.ps1` | `dist\wgal-<版本>-windows-x64.zip` |
    | Ubuntu | `packaging/linux/make-release.sh` | `dist/wgal-<版本>-linux-<架構>.tar.gz` |
    | macOS | `packaging/macos/make-release.sh` | `dist/wgal-<版本>-macos-<架構>.zip` |
+
+   編譯旗標或 Cargo 的輸出位置由外部設定時，腳本拒絕建置，打包之前也檢查每一個檔案：見 [packaging/INSTALL.zh-TW.md](packaging/INSTALL.zh-TW.md) 的「從原始碼建置發布包」。
 
 3. 把 `dist/` 裡的壓縮包解到本機的資料夾，照 [Agent 的步驟](#agent-的步驟)從第 3 步開始安裝。
 

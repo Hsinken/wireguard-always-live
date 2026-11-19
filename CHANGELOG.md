@@ -8,6 +8,30 @@ Each release archive carries a `RELEASE.txt` with the commit it was built
 from and the SHA-256 of every file in it. The Releases page gives the
 SHA-256 of each archive.
 
+## 4.3.0 (2026-11-20)
+
+- **Released for**: Windows 11, macOS and Ubuntu, planned: each is to be
+  built on its own platform from this repository. None is built yet, and
+  nothing is on the Releases page.
+- **macOS**: probes bound to the tunnel's interface count, by the owner's
+  decision of 2026-11-20, after on-device checks with 4.2.2 on one tunnel
+  ([docs/testing.md](docs/testing.md)): the light can turn green and
+  automatic recovery can be turned on. One of those checks did not pass on
+  4.2.2: the route to the tunnel's own address has the `LOCAL` flag, which
+  4.2.2 did not read, so that address was probed instead of refused (it did
+  not answer). 4.3.0 refuses a route that is not up or that has `LOCAL`,
+  `BROADCAST`, `MULTICAST`, `BLACKHOLE` or `REJECT`, and reads `ping`'s
+  exit 1 with `ping: bad interface name` (macOS 27.2.1) as an interface
+  that no longer exists. The checks run again on the installed 4.3.0;
+  until they pass, this is not acceptance on a device.
+- **Every platform**: the programs no longer name the computer that built
+  them. The release scripts build with Cargo's home and the repository
+  written as `/cargo` and `/wgal`, refuse compiler flags and output folders
+  set from outside, and search every file for those folders' paths before
+  packing ([packaging/INSTALL.md](packaging/INSTALL.md), "Build the release
+  from source").
+- Every compatibility minimum stays 4.2.1.
+
 ## 4.2.2 (2026-11-20)
 
 - **Released for**: macOS only: built for the owner's Mac and installed
