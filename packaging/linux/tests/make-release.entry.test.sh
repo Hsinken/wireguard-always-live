@@ -123,6 +123,36 @@ if [ "\$sub" = status ]; then
 fi
 exec "$real_git" "\$@"
 EOF
+# tar without the owner options (FAKE_TAR_OWNER), or adding one more file
+# to the archive than the folder holds (FAKE_TAR_EXTRA, its content).
+mkdir -p "$work/tarbin"
+real_tar=$(command -v tar)
+cat >"$work/tarbin/tar" <<EOF
+#!/usr/bin/env bash
+args=()
+create=""
+dir=""
+prev=""
+for a in "\$@"; do
+    [ "\$prev" != -C ] || dir=\$a
+    prev=\$a
+    case "\$a" in
+    --owner=* | --group=* | --numeric-owner) [ -z "\${FAKE_TAR_OWNER:-}" ] || continue ;;
+    -czf) create=1 ;;
+    esac
+    args+=("\$a")
+done
+if [ -n "\$create" ] && [ -n "\${FAKE_TAR_EXTRA:-}" ]; then
+    last=\${!#}
+    printf '%s' "\$FAKE_TAR_EXTRA" >"\$dir/\$last/extra"
+    rc=0
+    "$real_tar" "\${args[@]}" || rc=\$?
+    rm -f -- "\$dir/\$last/extra"
+    exit "\$rc"
+fi
+exec "$real_tar" "\${args[@]}"
+EOF
+chmod +x "$work/tarbin/tar"
 # The hash tool, failing for the archive itself when FAKE_HASH_FAIL is set.
 real_hash=$(command -v sha256sum)
 cat >"$work/hashbin/sha256sum" <<EOF
@@ -148,7 +178,8 @@ echo "fake icon" >"$repo/apps/desktop/src-tauri/icons/128x128.png"
 printf '[workspace.package]\nversion = "9.8.7"\n' >"$repo/Cargo.toml"
 echo "# fake lock file" >"$repo/Cargo.lock"
 echo '{ "name": "@wgal/desktop", "private": true }' >"$repo/apps/desktop/package.json"
-printf 'target/\ndist/\n' >"$repo/.gitignore"
+# The tests' Cargo configurations, in the checkout, are ignored by git.
+printf 'target/\ndist/\n.cargo/\n' >"$repo/.gitignore"
 cd "$repo"
 git init -q .
 git -c user.name=test -c user.email=test@example.invalid add -A
@@ -164,6 +195,7 @@ record() { # commit [version]
     {
         echo "commit $1"
         echo "version ${2:-9.8.7}"
+        echo "paths rewritten as /cargo and /wgal"
         sha256sum -- "${programs[@]}"
     } >target/release/wgal-build.txt
 }
@@ -223,6 +255,12 @@ cp "$work/older" target/release/wgal-build.txt
 run --no-build
 check "a record without the command line: refused" refused_with "changed"
 check "a record without the command line: nothing packed" nothing_packed
+
+# A record this script did not write: what it says is not repeated.
+record "$work/secret"
+run --no-build
+check "a record this script did not write: refused" refused_with "is not one this script wrote"
+check "a record this script did not write: the path is not printed" no_path_printed
 
 # The same commit and programs, built as another version.
 record "$head" 9.8.6
@@ -336,6 +374,28 @@ run "FAKE_NEWFILE=$repo/made-by-the-build.rs"
 check "a new file from the build: refused" refused_with "the build changed the checkout"
 check "a new file from the build: nothing packed" nothing_packed
 rm -f "$repo/made-by-the-build.rs"
+
+# A file that is not in git, there before the build: refused, as the
+# checkout is not clean.
+echo "notes" >"$repo/notes.txt"
+run
+check "an untracked file before the build: refused" refused_with "untracked files"
+check "an untracked file before the build: nothing built" nothing_built
+check "an untracked file before the build: nothing packed" nothing_packed
+rm -f "$repo/notes.txt"
+
+# --- The archive (Ubuntu): no owner names, exactly the release's files.
+run
+check "the archive names no owner" test "$(tar -tvzf "dist/$name.tar.gz" | awk '{print $2}' | LC_ALL=C sort -u)" = "0/0"
+check "the archive is checked again after packing" test "$(grep -c '^Checked [0-9]* files: no build paths$' <<<"$out")" -eq 2
+run "PATH=$work/tarbin:$work/bin:$PATH" FAKE_TAR_OWNER=1
+check "an archive with owner names: refused" refused_with "the archive names an owner"
+check "an archive with owner names: nothing packed" nothing_packed
+run "PATH=$work/tarbin:$work/bin:$PATH" "FAKE_TAR_EXTRA=$repo"
+check "an archive with another file: refused" refused_with "the archive holds other files than the release"
+check "an archive with another file: nothing packed" nothing_packed
+check "an archive with another file: the path is not printed" no_path_printed
+# --- End of the archive checks.
 
 # The last step failing leaves nothing either.
 run "PATH=$work/hashbin:$work/bin:$PATH" FAKE_HASH_FAIL=1

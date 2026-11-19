@@ -46,9 +46,16 @@ commit=0123456789abcdef0123456789abcdef01234567
 check "no record is refused" says "no build record" "$commit" 4.2.1 "${programs[@]}"
 build_record "$commit" 4.2.1 "${programs[@]}" >"$record"
 check "the record holds one version" grep -qx "version 4.2.1" "$record"
+check "the record names the rewrites' destinations" grep -qx "paths rewritten as /cargo and /wgal" "$record"
 check "the same commit, version and programs are accepted" accepted "$commit" 4.2.1 "${programs[@]}"
 check "another commit is refused" says "another commit" fedcba9876543210fedcba9876543210fedcba98 4.2.1 "${programs[@]}"
 check "another version is refused" says "version differs" "$commit" 4.2.2 "${programs[@]}"
+cp "$record" "$work/record.saved"
+printf 'commit %s\n' "$work/secret" >"$record"
+why=$(check_record "$commit" 4.2.1 "${programs[@]}") || true
+check "a record this script did not write is refused" test -n "$why"
+check "a record this script did not write: what it says is not repeated" test "${why/"$work"/}" = "$why"
+cp "$work/record.saved" "$record"
 echo "another build of the same version" >target/release/wgal-mcp
 check "a changed program is refused" says "changed" "$commit" 4.2.1 "${programs[@]}"
 rm target/release/wgal-mcp
@@ -195,12 +202,12 @@ release_like() { # folder: a clean release-like folder
     echo "nested" >"$1/sub/file"
 }
 utf16() { printf '%s' "$1" | iconv -f UTF-8 -t UTF-16LE; }
-refused_scan() { ! scan_release "$@" >/dev/null 2>&1; }
-refused_without_perl() { ! PATH="$work/no-perl" scan_release "$@" >/dev/null 2>&1; }
+refused_scan() { ! scan_release "$1" "$2" "$work" >/dev/null 2>&1; }
+refused_without_perl() { ! PATH="$work/no-perl" scan_release "$1" "$2" "$work" >/dev/null 2>&1; }
 scan_out=""
 scanned() { # folder: succeeds when the scan passes; keeps its output
     local rc=0
-    scan_out=$(scan_release "$1" "$list" 2>&1) || rc=$?
+    scan_out=$(scan_release "$1" "$list" "$work" 2>&1) || rc=$?
     return "$rc"
 }
 release_like "$work/rel"
@@ -252,12 +259,12 @@ check "no forbidden paths is refused" refused_scan "$work/rel" ""
 check "the root as a forbidden path is refused" refused_scan "$work/rel" "home folder	/"
 release_like "$work/rel"
 ln -s wgal "$work/rel/sub/link"
-scan_out=$(scan_release "$work/rel" "$list" 2>&1) || true
+scan_out=$(scan_release "$work/rel" "$list" "$work" 2>&1) || true
 check "a link is named inside the release" grep -qxF "make-release.sh: sub/link is a link or another kind of file; a release holds only files and folders" <<<"$scan_out"
 if [ "$(id -u)" -ne 0 ]; then
     release_like "$work/rel"
     chmod 000 "$work/rel/sub"
-    scan_out=$(scan_release "$work/rel" "$list" 2>&1) && scan_rc=0 || scan_rc=$?
+    scan_out=$(scan_release "$work/rel" "$list" "$work" 2>&1) && scan_rc=0 || scan_rc=$?
     chmod 700 "$work/rel/sub"
     check "a folder that cannot be listed is refused" test "$scan_rc" -ne 0
     check "a folder that cannot be listed: the message names no path" test "${scan_out/"$work"/}" = "$scan_out"
@@ -266,6 +273,13 @@ if [ "$(id -u)" -ne 0 ]; then
     check "an unreadable configuration's refusal names no path" test "$(config_refusal "$work/unreadable.toml" 2>&1)" = "it is not a readable file"
     chmod 600 "$work/unreadable.toml"
 fi
+release_like "$work/rel"
+mkdir -p "$work/lists"
+scan_release "$work/rel" "$list" "$work/lists" >/dev/null 2>&1 || true
+check "the scan's lists are written in the folder given, and removed" test -z "$(ls -A "$work/lists")"
+release_like "$work/rel"
+scanned_without_tmp() { TMPDIR="$work/no-such-tmp" scan_release "$1" "$list" "$work/lists" >/dev/null 2>&1; }
+check "the scan writes nothing in the system's temporary folder" scanned_without_tmp "$work/rel"
 mkdir -p "$work/no-perl"
 check "without perl nothing passes" refused_without_perl "$work/rel" "$list"
 

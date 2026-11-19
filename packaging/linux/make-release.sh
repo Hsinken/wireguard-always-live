@@ -36,8 +36,8 @@
 #   paths without symbolic links, exports that CARGO_HOME, and builds with
 #   only two flags, which write those two folders in the programs as /cargo
 #   and /wgal (CARGO_ENCODED_RUSTFLAGS, --remap-path-prefix).
-# - The window is built with --locked too, and git must report the same
-#   checkout after the builds as before (Cargo.lock and untracked files
+# - The window is built with --locked too, and the checkout must be clean,
+#   without untracked files, before and after the builds (Cargo.lock
 #   included); every git call must succeed.
 # - Before packing, every file of the release, RELEASE.txt included, is
 #   searched for the three folders' paths, as UTF-8 and as UTF-16LE. A hit,
@@ -45,10 +45,15 @@
 #   reading) packs nothing; the message names the file inside the release,
 #   which folder and which encoding, never the path.
 # - The release is assembled in a temporary folder, and its archive renamed
-#   into place last.
+#   into place last. Before that the archive is unpacked in the same folder
+#   and checked again: it must hold exactly the release's files, with no
+#   owner names (it is written as owner and group 0, numerically), and its
+#   files are searched again. Every file this script writes is under
+#   target/ or dist/.
 #
 # A build writes target/release/wgal-build.txt beside the programs: the
-# commit, the version and each program's SHA-256. --no-build packs the
+# commit, the version, the rewrites' destinations (/cargo, /wgal) and each
+# program's SHA-256. --no-build packs the
 # programs already there only when that record says they were built from
 # this very commit with this version and none has changed since (FIX-06:
 # a version mark alone does not tell one commit's build from another's).
@@ -63,6 +68,7 @@ build_record() { # commit version file...
     local file
     echo "commit $1"
     echo "version $2"
+    echo "paths rewritten as /cargo and /wgal"
     shift 2
     for file in "$@"; do
         if [ -f "$file" ]; then
@@ -83,8 +89,13 @@ check_record() { # commit version file...
     fi
     local recorded
     recorded=$(sed -n 's/^commit //p' "$record")
+    # What a record says is not repeated: it may hold anything.
+    if ! [[ "$recorded" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "the build record ($record) is not one this script wrote; build once without --no-build"
+        return 1
+    fi
     if [ "$recorded" != "$1" ]; then
-        echo "the programs were built from another commit (${recorded:-none}), not $1"
+        echo "the programs were built from another commit, not $1"
         return 1
     fi
     if [ "$(build_record "$@")" != "$(cat "$record")" ]; then
@@ -302,16 +313,17 @@ printf "Checked %d files: no build paths\n", scalar @paths;
 PERL
 
 # Searches every file under the folder for the forbidden paths, given as
-# "<label><TAB><path>" lines. Fails on a hit, on anything but plain files
+# "<label><TAB><path>" lines; its lists of files go in the scratch folder,
+# which must not be inside it. Fails on a hit, on anything but plain files
 # and folders, and on any error; the messages name no path but files inside
 # the folder.
-scan_release() { # folder forbidden
+scan_release() { # folder forbidden scratch
     local dir=${1%/} listing odd rc=0 line
     if ! command -v perl >/dev/null 2>&1; then
         echo "make-release.sh: perl is missing; the release cannot be checked, so nothing was packed" >&2
         return 1
     fi
-    if ! listing=$(mktemp 2>/dev/null) || ! odd=$(mktemp 2>/dev/null); then
+    if ! listing=$(mktemp "$3/.list.XXXXXX" 2>/dev/null) || ! odd=$(mktemp "$3/.odd.XXXXXX" 2>/dev/null); then
         echo "make-release.sh: the release could not be checked (no temporary file); nothing was packed" >&2
         [ -z "${listing:-}" ] || rm -f -- "$listing"
         return 1
@@ -357,7 +369,7 @@ refuse() { # message
 }
 
 # What git says about the checkout, every change and untracked file
-# included, or a refusal when git fails.
+# included (nothing when it is clean), or a refusal when git fails.
 checkout_state() {
     git -c core.quotepath=true status --porcelain=v1 --untracked-files=all 2>/dev/null ||
         refuse "git could not read the checkout"
@@ -419,12 +431,8 @@ forbid "Cargo home" "$cargo_home"
 case "$cargo_given" in /?*) forbid "Cargo home" "${cargo_given%/}" ;; esac
 forbid "repository" "$root"
 
-before=$(checkout_state)
-tracked=$(grep -v '^?? ' <<<"$before" || true)
-if [ -n "$tracked" ]; then
-    echo "make-release.sh: the checkout has uncommitted changes; a release is built from a commit" >&2
-    exit 65
-fi
+state=$(checkout_state)
+[ -z "$state" ] || refuse "the checkout has uncommitted changes or untracked files; a release is built from a clean checkout"
 commit=$(git rev-parse HEAD 2>/dev/null) || refuse "git could not read the commit"
 
 programs=(target/release/wgal-watchdog target/release/wgal-desktop target/release/wgal-mcp target/release/wgal)
@@ -442,9 +450,9 @@ if [ "$build" -eq 1 ]; then
     cargo build --release --locked -p wgal-mcp
     cargo build --release --locked -p wgal-cli
     pnpm --filter @wgal/desktop run tauri build --no-bundle -- --locked
-    after=$(checkout_state)
+    state=$(checkout_state)
     now=$(git rev-parse HEAD 2>/dev/null) || refuse "git could not read the commit after the build"
-    if [ "$after" != "$before" ] || [ "$now" != "$commit" ]; then
+    if [ -n "$state" ] || [ "$now" != "$commit" ]; then
         refuse "the build changed the checkout (Cargo.lock, or a new file?); nothing was packed"
     fi
     build_record "$commit" "$version" "${programs[@]}" >"$record"
@@ -476,8 +484,19 @@ hashes=$(cd "$temp" && sha256sum -- * | sort -k 2)
     echo "SHA-256"
     echo "$hashes"
 } >"$temp/RELEASE.txt"
-scan_release "$temp" "$forbidden" || exit 65
-tar -C "$work" -czf "$work/$name.tar.gz" "$name"
+scan_release "$temp" "$forbidden" "$work" || exit 65
+tar --owner=0 --group=0 --numeric-owner -C "$work" -czf "$work/$name.tar.gz" "$name"
+# The archive as it will be delivered: no owner names, exactly the
+# release's files, and those searched again.
+owners=$(tar -tvzf "$work/$name.tar.gz" 2>/dev/null | awk '{print $2}' | LC_ALL=C sort -u) ||
+    refuse "the archive could not be listed; nothing was packed"
+[ "$owners" = "0/0" ] || refuse "the archive names an owner; nothing was packed"
+mkdir "$work/check"
+tar -xzf "$work/$name.tar.gz" -C "$work/check" 2>/dev/null || refuse "the archive could not be unpacked; nothing was packed"
+packed_files=$(cd "$temp" && find . -print | LC_ALL=C sort) || refuse "the release could not be listed; nothing was packed"
+unpacked_files=$(cd "$work/check/$name" && find . -print | LC_ALL=C sort) || refuse "the archive could not be listed; nothing was packed"
+[ "$packed_files" = "$unpacked_files" ] || refuse "the archive holds other files than the release; nothing was packed"
+scan_release "$work/check/$name" "$forbidden" "$work" || exit 65
 mv -- "$temp" "$stage"
 mv -- "$work/$name.tar.gz" "$archive"
 rm -rf -- "$work"
