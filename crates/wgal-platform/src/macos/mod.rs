@@ -59,7 +59,8 @@
 //! the tunnel with the `LOCAL` flag, which 4.2.2 did not read, so one echo
 //! was sent to it (no reply came back). 4.3.0 refuses such a route, and
 //! reads exit 1 with `ping: bad interface name`, what this macOS prints for
-//! an interface that no longer exists, as `NotFound` (68 before). The same
+//! an interface that no longer exists, as `NotFound`, as exit 68 already
+//! was. The same
 //! checks run again on the installed 4.3.0 decide whether this stays
 //! `Supported`; until they pass, this is not accepted on a device.
 //!

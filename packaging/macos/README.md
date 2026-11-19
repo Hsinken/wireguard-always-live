@@ -39,8 +39,14 @@ something goes wrong.
 >   be turned on. The same checks run again on the installed 4.3.0 decide
 >   whether this stays; until they pass, it is not "accepted on a device".
 > - Not verified on a real Mac yet (NOT RUN): reading the Keychain after
->   the screen locks; two tunnels at once; a fault that automatic recovery
->   has to repair.
+>   the screen locks; two tunnels at once.
+> - A fault that automatic recovery has to repair is BLOCKED: there is no
+>   authorized way to make the target stop answering.
+> - A limit that stays: when the Network Extension stalls while
+>   `scutil --nc status` still says `Connected`, `ping` may print a
+>   `sendto` error WGAL does not know yet. That is read as "the probe is
+>   unavailable", not as a failure, so it neither starts automatic recovery
+>   nor sends a notification, until a Mac shows what it prints.
 > - Also not tested on a real Mac yet (NOT RUN): the
 >   recovery that renames the previous app back, the refusal to start once
 >   the new version may have run, turning the start at login off and on

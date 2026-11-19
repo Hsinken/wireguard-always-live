@@ -22,7 +22,8 @@ const EX_USAGE: i32 = 64;
 const EX_NOHOST: i32 = 68;
 const EX_NOPERM: i32 = 77;
 /// What ping exits with on macOS 27.2.1 when `-b` names no interface
-/// (on-device check, 2026-11-20); earlier releases exit with `EX_NOHOST`.
+/// (on-device check, 2026-11-20). `EX_NOHOST` with the same message is
+/// still read the same way, as it was before.
 const EX_NO_INTERFACE: i32 = 1;
 
 /// `-n -b <interface> -c 1 -W <ms> -t <s> <target>`: numeric output, bound to
