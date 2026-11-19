@@ -641,9 +641,11 @@ try {
         '',
         'SHA-256'
     )
-    foreach ($item in Get-ChildItem -LiteralPath $temp -File | Sort-Object Name) {
-        $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $item.FullName).Hash.ToLower()
-        $lines += "$hash  $($item.Name)"
+    # The same list of files the search and the zip use, hidden and system
+    # files included.
+    foreach ($relative in @(Get-ReleaseFiles $temp)) {
+        $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $temp $relative)).Hash.ToLower()
+        $lines += "$hash  $relative"
     }
     [IO.File]::WriteAllLines((Join-Path $temp 'RELEASE.txt'), $lines, (New-Object Text.UTF8Encoding $false))
 

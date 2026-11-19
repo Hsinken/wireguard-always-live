@@ -315,6 +315,25 @@ try {
         Check 'a build: no temporary folder is left' (@(Get-ChildItem -LiteralPath $dist -Force -Filter '.wgal-*').Count -eq 0)
         Check 'a build: the record names this commit' (@([IO.File]::ReadAllLines($record)) -contains "commit $head")
 
+        # A hidden or system file is hashed in RELEASE.txt like any other:
+        # every file of the zip but RELEASE.txt has exactly one right line.
+        $hidden = Join-Path $work 'packaging\windows\README.md'
+        [IO.File]::SetAttributes($hidden, [IO.FileAttributes]::Hidden -bor [IO.FileAttributes]::System)
+        $r = Invoke-Release
+        [IO.File]::SetAttributes($hidden, [IO.FileAttributes]::Normal)
+        Check 'a hidden and system file: packed' ($r.Code -eq 0 -and (Test-Path -LiteralPath $zip))
+        $listed = @{}
+        foreach ($line in @([IO.File]::ReadAllLines((Join-Path $stage 'RELEASE.txt')))) {
+            if ($line -match '^([0-9a-f]{64})  (.+)$') { $listed[$Matches[2]] = @($listed[$Matches[2]]) + $Matches[1] }
+        }
+        $packedNames = @(Get-ChildItem -LiteralPath $stage -File -Force | Where-Object { $_.Name -ne 'RELEASE.txt' })
+        $right = @($packedNames | Where-Object {
+                $listed.ContainsKey($_.Name) -and @($listed[$_.Name] | Where-Object { $_ }).Count -eq 1 -and
+                @($listed[$_.Name] | Where-Object { $_ })[0] -eq (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLower()
+            })
+        Check 'a hidden and system file: every packed file has exactly one right hash' ($packedNames.Count -gt 0 -and $right.Count -eq $packedNames.Count -and $listed.Count -eq $packedNames.Count)
+        Check 'a hidden and system file: README.md is hashed' ($listed.ContainsKey('README.md'))
+
         # CARGO_HOME outside the profile folder, and relative to where the
         # script was started (not to the repository, where it does not exist).
         $other = Join-Path $top ("other cargo " + [char]::ConvertFromUtf32(0x1D11E))
