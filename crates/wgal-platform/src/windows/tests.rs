@@ -872,6 +872,12 @@ fn f02_a_start_already_sent_is_never_overtaken_by_a_later_stop() {
             std::thread::sleep(Duration::from_millis(5));
         }
         assert!(scm.calls().contains(&opened), "{:?}", scm.calls());
+        // The opened stop now has time to send if it would not wait for the
+        // start: then it would show in `sends` here, and as an overlap below.
+        // That a stop is held back can only be seen as a send that does not
+        // come in such a window; seeing the wait itself would need a hook in
+        // the adapter.
+        std::thread::sleep(Duration::from_millis(100));
         // The stop waits for the start the SCM is still working on.
         assert_eq!(sends(&scm), [ScmCall::Start(LAB_SERVICE.to_owned())]);
         scm.release();
