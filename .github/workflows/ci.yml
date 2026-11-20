@@ -74,6 +74,9 @@ jobs:
       - name: Generated contract files are committed
         shell: bash
         run: |
-          git status --porcelain -- apps/desktop/src/protocol/generated crates/wgal-protocol/fixtures
-          git diff --exit-code -- apps/desktop/src/protocol/generated crates/wgal-protocol/fixtures
-          test -z "$(git status --porcelain --untracked-files=all -- apps/desktop/src/protocol/generated)"
+          status=$(git status --porcelain --untracked-files=all -- apps/desktop/src/protocol/generated crates/wgal-protocol/fixtures)
+          if [ -n "$status" ]; then
+            printf '%s\n' "$status"
+            git diff -- apps/desktop/src/protocol/generated crates/wgal-protocol/fixtures
+            exit 1
+          fi

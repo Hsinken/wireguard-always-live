@@ -256,6 +256,8 @@ jobs:
           name: notes
           path: notes
 
+      # A failure after the draft is made leaves the draft, which only the
+      # repository's writers see; AGENTS.md says what to do with it.
       - name: Publish
         shell: bash
         env:
@@ -269,23 +271,31 @@ jobs:
           [ "$TAG" = "v$VERSION" ] || { echo "the tag is not v$VERSION"; exit 1; }
 
           # The tag still names the commit that was built.
-          ref=$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
-          if [ "${ref%% *}" = tag ]; then
-            ref=$(gh api "repos/$REPO/git/tags/${ref#* }" --jq '.object.type + " " + .object.sha')
-          fi
-          if [ "$ref" != "commit $COMMIT" ]; then
-            echo "the tag $TAG no longer names commit $COMMIT"
-            exit 1
-          fi
+          tag_names_commit() {
+            local ref
+            ref=$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+            if [ "${ref%% *}" = tag ]; then
+              ref=$(gh api "repos/$REPO/git/tags/${ref#* }" --jq '.object.type + " " + .object.sha')
+            fi
+            if [ "$ref" != "commit $COMMIT" ]; then
+              echo "the tag $TAG no longer names commit $COMMIT"
+              return 1
+            fi
+          }
 
+          tag_names_commit
           (cd artifacts && sha256sum -c ../notes/SHA256SUMS)
           gh release create "$TAG" --repo "$REPO" --verify-tag --draft \
             --title "WG Always Live $VERSION" --notes-file notes/notes.md \
             artifacts/* notes/SHA256SUMS
 
-          # What was uploaded is what was checked.
+          # What was uploaded is what verify checked: its SHA256SUMS, and
+          # the three archives against it.
           mkdir uploaded
           gh release download "$TAG" --repo "$REPO" --dir uploaded
-          (cd uploaded && sha256sum -c SHA256SUMS && [ "$(ls -A | wc -l)" -eq 4 ])
+          cmp notes/SHA256SUMS uploaded/SHA256SUMS
+          (cd uploaded && sha256sum -c ../notes/SHA256SUMS)
+          [ "$(ls -A uploaded | wc -l)" -eq 4 ]
 
+          tag_names_commit
           gh release edit "$TAG" --repo "$REPO" --draft=false

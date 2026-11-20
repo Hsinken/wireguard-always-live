@@ -413,7 +413,11 @@ tag publishes a release: do it only when the owner asks, after `ci.yml`
 has passed on that commit, and never on a commit whose message has
 `[skip ci]` (GitHub then runs nothing for the tag). The workflow releases
 all three platforms; a version for one platform only is built by hand on
-that platform and not tagged. Building one from source on the
+that platform and not tagged. If its `publish` job fails after it made the
+draft release, the draft stays, seen only by the repository's writers:
+check that its notes name this run and commit, then, with the owner's
+approval, delete the draft (never a published release, whose files are
+never replaced) and run the failed jobs again. Building one from source on the
 computer it will be installed on, as the README says, needs nobody's
 request. `packaging/INSTALL.md` (English) and
 `packaging/INSTALL.zh-TW.md` are the install and removal guide every zip
