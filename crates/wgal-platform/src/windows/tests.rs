@@ -844,7 +844,14 @@ fn f02_a_stop_withdrawn_at_its_deadline_is_never_sent() {
 
 #[test]
 fn f02_a_start_already_sent_is_never_overtaken_by_a_later_stop() {
-    let (scm, _, adapter) = setup_with(short_control());
+    // The stop must still be inside its deadline when the start is released
+    // below, however slowly this thread is scheduled: a stop whose deadline
+    // passes while it waits is withdrawn unsent, which is right, but not what
+    // this test is about. So the deadline is long beside the 50 ms wait.
+    let (scm, _, adapter) = setup_with(Limits {
+        control: Duration::from_millis(1000),
+        ..short_control()
+    });
     let lab = binding("lab");
     // The SCM holds the start request itself past the deadline.
     scm.hold(ScmCall::Start(LAB_SERVICE.to_owned()));
