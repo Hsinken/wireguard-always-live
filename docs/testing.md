@@ -226,9 +226,10 @@ On the developer's computer:
     tunnel; the LAN gateway, the Mac's LAN address and the tunnel's own
     address were all refused before sending (`route_mismatch`), and the
     same silent address got `no_reply`; a disconnect, a connect and a
-    reconnect through `wgal` each exited 0, each connect was followed by a
-    new verified probe and a green light, and nothing connected the tunnel
-    again after the user's disconnect; turning automatic recovery on was
+    reconnect through `wgal` each exited 0; after the disconnect the tunnel
+    stayed disconnected until the connect, and nothing connected it again;
+    the connect and the reconnect were each followed by a new verified
+    probe and a green light; turning automatic recovery on was
     accepted; the end state was the state before, the tunnel's
     `ConnectCount` two higher.
   - The owner had turned automatic recovery on after the upgrade; the
@@ -269,7 +270,7 @@ where it stands.
 | M3 | macOS: `ping -b` is bound to the interface | 4.2.2, 2026-11-20: a reply from the target and `no_reply` from a silent address in the tunnel's routes, PASS; the LAN gateway and the Mac's LAN address refused before sending, PASS; the tunnel's own address not refused (no reply), FAIL. 4.3.0 installed, 2026-11-20: all three refused before sending, the same silent address `no_reply`, PASS |
 | M4 | macOS: routes, state and probes during a stop, with timestamps | PASS (4.2.2, 2026-11-20): over a 15 s stop, the state, the route and a probe on the old interface, each sample with its own times |
 | M5 | macOS: On-Demand behaviour | Observed only: no reconnect the test did not cause, during one 15 s stop (4.2.2, 2026-11-20); On-Demand itself NOT RUN |
-| M6 | macOS: queries, starts and stops as the LaunchAgent | PASS (4.2.2, 2026-11-20): a stop and a start through the watchdog, each within 30 s, without a prompt, one of them after the SSH session had ended. 4.3.0 installed, 2026-11-20: a disconnect, a connect and a reconnect through `wgal`, each followed by a verified probe, PASS |
+| M6 | macOS: queries, starts and stops as the LaunchAgent | PASS (4.2.2, 2026-11-20): a stop and a start through the watchdog, each within 30 s, without a prompt, one of them after the SSH session had ended. 4.3.0 installed, 2026-11-20: a disconnect, a connect and a reconnect through `wgal`, each exit 0; the tunnel stayed disconnected until the connect; the connect and the reconnect each followed by a new verified probe, PASS |
 | M7 | macOS: monitoring goes on after the window quits | NOT RUN (not in the run the owner authorized on 2026-11-20) |
 | M8 | macOS: probes and reconnects after the screen locks | NOT RUN (not in the run the owner authorized on 2026-11-20) |
 | M9 | macOS: the Keychain while the screen is locked | NOT RUN (not in the run the owner authorized on 2026-11-20) |
