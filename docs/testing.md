@@ -159,8 +159,8 @@ each `RELEASE.txt`, installed as upgrades and checked, on 2026-11-20:
 
 ### Ubuntu
 
-On a server running Ubuntu Server 26.04 with one `wg-quick` tunnel, through
-the installed watchdog (root), with WGAL 4.1.0, then 4.2.1:
+On Ubuntu Server 26.04, with one `wg-quick` tunnel under test, through the
+installed watchdog (root), with WGAL 4.1.0, then 4.2.1:
 
 - **PASS**:
   - the tools' output matches what the parsers expect;
@@ -210,20 +210,20 @@ On a Windows 11 computer:
 - **PASS**: a native build and every test on a Mac (macOS 27, Apple
   silicon), and installing, upgrading (with a failure injected on purpose)
   and removing a 2.2.1 test build.
-- **Found on a device**: 4.2.1, on that Mac (macOS 27.2.1), could
+- **Found on a device**: 4.2.1, on macOS 27.2.1, could
   not list the tunnels: that macOS writes the service type with a colon
   (`[VPN:com.wireguard.macos]`), and the parser accepted only a slash. Fixed
   in 4.2.2; the fixtures `nc_list_macos27.txt` and `nc_status_macos27.txt`
   copy the real layout and structure with invented values.
-- **PASS with 4.2.2** (on that Mac on 2026-11-20, checked read only): the
+- **PASS with 4.2.2** (macOS 27.2.1, 2026-11-20, checked read only): the
   watchdog runs, lists the official app's tunnels, and
   reads a registered tunnel's state as connected, as it is. The light was
   gray (`not_configured`) until a recovery check target was set, then red
   (`path_unverified`): 4.2.2 does not count a bound probe on macOS.
-- **On-device checks with 4.2.2** (2026-11-20, that Mac, one connected
-  tunnel, through the installed watchdog, the user's own LaunchAgent; the
-  owner authorized stopping and starting that tunnel and a few probes to
-  addresses beside the target):
+- **On-device checks with 4.2.2** (2026-11-20, macOS 27.2.1, one
+  connected tunnel under test, through the installed watchdog, the user's
+  own LaunchAgent; the owner authorized stopping and starting the tunnel
+  under test and a few probes to addresses beside the target):
   - **PASS**: the target answered a probe bound to the tunnel (M3); the
     tunnel stopped and started through the watchdog within 30 s, without a
     prompt, its interface read again and its `ConnectCount` one higher
@@ -244,8 +244,8 @@ On a Windows 11 computer:
     both as `NotFound`.
 - **4.3.0**: the bound ICMP probe is `Supported`, by the owner's decision
   of 2026-11-20, although the check above failed on 4.2.2.
-- **Checked again with 4.3.0** (on that Mac on 2026-11-20, the same
-  tunnel, through the installed watchdog):
+- **Checked again with 4.3.0** (macOS 27.2.1, 2026-11-20, the same
+  tunnel under test, through the installed watchdog):
   - **PASS**: the window, the watchdog, `wgal` and `wgal-mcp` are 4.3.0,
     and the watchdog reports the bound ICMP probe `Supported`; the light
     turned green once the recovery check target answered through the
