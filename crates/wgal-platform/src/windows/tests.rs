@@ -845,9 +845,9 @@ fn f02_a_stop_withdrawn_at_its_deadline_is_never_sent() {
 #[test]
 fn f02_a_start_already_sent_is_never_overtaken_by_a_later_stop() {
     // The stop must still be inside its deadline when the start is released
-    // below, however slowly this thread is scheduled: a stop whose deadline
-    // passes while it waits is withdrawn unsent, which is right, but not what
-    // this test is about. So the deadline is long beside the 50 ms wait.
+    // below: a stop whose deadline passes while it waits is withdrawn unsent,
+    // which is right, but not what this test is about. A deadline of a second
+    // leaves a slow runner a wide margin (with 150 ms one failed in CI).
     let (scm, _, adapter) = setup_with(Limits {
         control: Duration::from_millis(1000),
         ..short_control()
@@ -863,7 +863,15 @@ fn f02_a_start_already_sent_is_never_overtaken_by_a_later_stop() {
 
     let stop = std::thread::scope(|scope| {
         let stop = scope.spawn(|| adapter.stop(&lab));
-        std::thread::sleep(Duration::from_millis(50));
+        // The start is released only once the stop has opened the service,
+        // so the stop is known to be waiting behind the start, not yet to
+        // come.
+        let opened = ScmCall::Open(LAB_SERVICE.to_owned(), Control::Stop);
+        let until = Instant::now() + Duration::from_secs(1);
+        while !scm.calls().contains(&opened) && Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(scm.calls().contains(&opened), "{:?}", scm.calls());
         // The stop waits for the start the SCM is still working on.
         assert_eq!(sends(&scm), [ScmCall::Start(LAB_SERVICE.to_owned())]);
         scm.release();
