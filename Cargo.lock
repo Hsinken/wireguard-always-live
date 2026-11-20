@@ -4125,7 +4125,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-cli"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "jiff",
  "serde",
@@ -4137,7 +4137,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-client"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "wgal-platform",
  "wgal-protocol",
@@ -4145,7 +4145,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-core"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "serde",
  "wgal-protocol",
@@ -4154,7 +4154,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-desktop"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "jsonc-parser",
  "junction",
@@ -4171,7 +4171,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-mcp"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "regex",
  "serde",
@@ -4182,7 +4182,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-platform"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "nix",
  "rustix",
@@ -4197,7 +4197,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-protocol"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -4206,7 +4206,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-runtime"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "gethostname",
  "jiff",
@@ -4225,7 +4225,7 @@ dependencies = [
 
 [[package]]
 name = "wgal-testkit"
-version = "4.3.0"
+version = "4.3.1"
 dependencies = [
  "wgal-core",
  "wgal-protocol",
