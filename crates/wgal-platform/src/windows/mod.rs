@@ -108,7 +108,7 @@
 //! the echo left through the tunnel (plan §4.2), so `bound_icmp_probe` was
 //! `Unknown` until the on-device W3 (`docs/testing.md`). It is
 //! `Supported` since the
-//! owner's decision of 2026-11-03, after W3 on a one-tunnel machine: the
+//! owner's decision of 2026-11-03, after W3 with one tunnel under test: the
 //! baseline through the tunnel, a target routed through the physical adapter
 //! refused as RouteMismatch, and a silent address inside the tunnel's routes
 //! never answered. Two tunnels whose routes overlap were not part of it; that
