@@ -60,9 +60,8 @@
 //! was sent to it (no reply came back). 4.3.0 refuses such a route, and
 //! reads exit 1 with `ping: bad interface name`, what this macOS prints for
 //! an interface that no longer exists, as `NotFound`, as exit 68 already
-//! was. The same
-//! checks run again on the installed 4.3.0 decide whether this stays
-//! `Supported`; until they pass, this is not accepted on a device.
+//! was. The same checks passed again on 4.3.0 installed on that Mac: the
+//! tunnel's own address was refused before sending.
 //!
 //! Still unproven: two tunnels and overlapping routes; a probe through an
 //! interface that vanished during it (fakes only); automatic recovery's
