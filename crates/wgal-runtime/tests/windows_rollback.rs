@@ -21,8 +21,8 @@
 //! show, in the window's words (Codex re-review P3-N2).
 //!
 //! The store and the watchdog's handling of a restore from the backup are
-//! the same in this build as in the older builds installed on the soak
-//! machine (`00ad525`, `7339e8e`): `crates/wgal-runtime/src/store.rs` and
+//! the same in this build as in the older builds of the soak test
+//! (`00ad525`, `7339e8e`): `crates/wgal-runtime/src/store.rs` and
 //! `distrust` in `crates/wgal-core/src/watchdog.rs` did not change since.
 //! So this build stands in for the older one. The README's PowerShell itself
 //! is checked separately against a temporary folder; this test pins the file
