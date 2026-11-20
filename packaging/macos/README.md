@@ -15,14 +15,14 @@ something goes wrong.
 >   injected after the watchdog stopped) and removed with
 >   `uninstall.sh --remove-data` on that Mac: PASS. That is not "accepted
 >   on a device".
-> - 4.2.1 was built from this repository and installed on that Mac. Its
->   watchdog could not list the tunnels (`manager_query_failed`):
+> - With 4.2.1, built from this repository, the watchdog on that Mac
+>   could not list the tunnels (`manager_query_failed`):
 >   macOS 27.2.1 writes the service type as `[VPN:com.wireguard.macos]`,
 >   with a colon, and the parser accepted only a slash. 4.2.2 reads both.
 >   The list's format and the status's were read on that Mac without
 >   changing anything.
-> - 4.2.2 is installed on that Mac (2026-11-20): its watchdog lists both
->   tunnels and reads a registered tunnel's state as connected.
+> - With 4.2.2 (2026-11-20), its watchdog on that Mac lists the tunnels
+>   and reads a registered tunnel's state as connected.
 > - The same day the bound probe was tested there with 4.2.2, through its
 >   watchdog as the LaunchAgent, on the one connected tunnel
 >   ([docs/testing.md](../../docs/testing.md), M1 to M6): the target
@@ -37,8 +37,8 @@ something goes wrong.
 >   counts the bound probe: once the recovery check target has answered
 >   through the tunnel, the light can turn green and automatic recovery can
 >   be turned on.
-> - 4.3.0 installed on that Mac (2026-11-20) passed the same checks
->   again, through its watchdog, on the same tunnel: the light turned
+> - 4.3.0 (2026-11-20) passed the same checks again on that Mac,
+>   through its watchdog, on the same tunnel: the light turned
 >   green; the LAN gateway, the Mac's LAN address and the tunnel's own
 >   address were all refused before sending, and the silent address got no
 >   reply; a disconnect, a connect and a reconnect through `wgal` each
