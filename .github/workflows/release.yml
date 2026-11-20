@@ -29,7 +29,9 @@ jobs:
     name: build (${{ matrix.platform }})
     needs: checks
     strategy:
-      fail-fast: true
+      # Every platform's build runs to the end, so one run shows them all;
+      # nothing is published unless all three passed.
+      fail-fast: false
       matrix:
         include:
           - platform: linux
@@ -69,6 +71,14 @@ jobs:
         run: |
           rustup toolchain install
           rustc --version
+
+      # The make-release scripts need Cargo's home to exist before they build
+      # (they resolve it and write it as /cargo); where rustup comes from a
+      # package manager (the macOS runner), nothing has made it yet.
+      - name: Cargo's home
+        if: runner.os != 'Windows'
+        shell: bash
+        run: mkdir -p "${CARGO_HOME:-$HOME/.cargo}"
 
       - name: Tools
         shell: bash
