@@ -863,9 +863,7 @@ fn f02_a_start_already_sent_is_never_overtaken_by_a_later_stop() {
 
     let stop = std::thread::scope(|scope| {
         let stop = scope.spawn(|| adapter.stop(&lab));
-        // The start is released only once the stop has opened the service,
-        // so the stop is known to be waiting behind the start, not yet to
-        // come.
+        // First the stop has to be under way: it has opened the service.
         let opened = ScmCall::Open(LAB_SERVICE.to_owned(), Control::Stop);
         let until = Instant::now() + Duration::from_secs(1);
         while !scm.calls().contains(&opened) && Instant::now() < until {
