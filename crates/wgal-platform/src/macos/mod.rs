@@ -44,8 +44,8 @@
 //! route again after the probe and discards the reply if it moved.
 //! `bound_icmp_probe` was `Unknown` until the on-device tests summarized in
 //! `docs/testing.md`. It is `Supported` since 4.3.0, by the owner's decision
-//! of 2026-11-20, after these ran with 4.2.2 on a one-tunnel Mac (macOS
-//! 27.2.1) through the installed watchdog, the user's own LaunchAgent, end
+//! of 2026-11-20, after these ran with 4.2.2, with one tunnel under test on
+//! macOS 27.2.1, through the installed watchdog, the user's own LaunchAgent, end
 //! to end: the target answered through the tunnel before and after a stop
 //! and start; a silent address inside the tunnel's routes got no reply
 //! (`NoReply`); the LAN gateway and the Mac's LAN address were refused
@@ -60,8 +60,8 @@
 //! was sent to it (no reply came back). 4.3.0 refuses such a route, and
 //! reads exit 1 with `ping: bad interface name`, what this macOS prints for
 //! an interface that no longer exists, as `NotFound`, as exit 68 already
-//! was. The same checks passed again with 4.3.0 on that Mac: the
-//! tunnel's own address was refused before sending.
+//! was. The same checks passed again with 4.3.0: the tunnel's own address
+//! was refused before sending.
 //!
 //! Still unproven: two tunnels and overlapping routes; a probe through an
 //! interface that vanished during it (fakes only); automatic recovery's

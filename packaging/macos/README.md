@@ -7,24 +7,24 @@ says what the scripts do, where the files are and where to look when
 something goes wrong.
 
 > **Status (2026-11-20)**:
-> - On 2026-11-13 WGAL was built and tested natively on a Mac for the
+> - On 2026-11-13 WGAL was built and tested natively on macOS for the
 >   first time (Apple silicon, macOS 27.2.1): the five commands pass, and
 >   the scripts' stand-in tests ran and pass with macOS's own bash 3.2.
-> - The same day, a test build (with the version numbers GUI 2.2.1,
->   watchdog 2.3.1) was installed, upgraded (one run with a failure
->   injected after the watchdog stopped) and removed with
->   `uninstall.sh --remove-data` on that Mac: PASS. That is not "accepted
->   on a device".
-> - With 4.2.1, built from this repository, the watchdog on that Mac
+> - On 2026-11-13, on macOS 27.2.1, a test build (with the version numbers
+>   GUI 2.2.1, watchdog 2.3.1) was installed, upgraded (one run with a
+>   failure injected after the watchdog stopped) and removed with
+>   `uninstall.sh --remove-data`: PASS. That is not "accepted on a
+>   device".
+> - With 4.2.1, built from this repository, on macOS 27.2.1, the watchdog
 >   could not list the tunnels (`manager_query_failed`):
 >   macOS 27.2.1 writes the service type as `[VPN:com.wireguard.macos]`,
 >   with a colon, and the parser accepted only a slash. 4.2.2 reads both.
->   The list's format and the status's were read on that Mac without
->   changing anything.
-> - With 4.2.2 (2026-11-20), its watchdog on that Mac lists the tunnels
+>   The list's format and the status's were read without changing
+>   anything.
+> - With 4.2.2 (2026-11-20, macOS 27.2.1), the watchdog lists the tunnels
 >   and reads a registered tunnel's state as connected.
-> - The same day the bound probe was tested there with 4.2.2, through its
->   watchdog as the LaunchAgent, on the one connected tunnel
+> - On 2026-11-20 the bound probe was tested with 4.2.2, through the
+>   watchdog as the LaunchAgent, with one connected tunnel under test
 >   ([docs/testing.md](../../docs/testing.md), M1 to M6): the target
 >   answered through the tunnel before and after a stop and start; a
 >   silent address in the tunnel's routes got no reply; the LAN gateway
@@ -37,8 +37,8 @@ something goes wrong.
 >   counts the bound probe: once the recovery check target has answered
 >   through the tunnel, the light can turn green and automatic recovery can
 >   be turned on.
-> - 4.3.0 (2026-11-20) passed the same checks again on that Mac,
->   through its watchdog, on the same tunnel: the light turned
+> - 4.3.0 (2026-11-20) passed the same checks again, through the
+>   watchdog, with the same tunnel under test: the light turned
 >   green; the LAN gateway, the Mac's LAN address and the tunnel's own
 >   address were all refused before sending, and the silent address got no
 >   reply; a disconnect, a connect and a reconnect through `wgal` each
