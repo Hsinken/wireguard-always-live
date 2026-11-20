@@ -10,9 +10,9 @@ SHA-256 of each archive.
 
 ## 4.3.0 (2026-11-20)
 
-- **Released for**: Windows 11, macOS and Ubuntu, planned: each is to be
-  built on its own platform from this repository. None is built yet, and
-  nothing is on the Releases page.
+- **Released for**: Windows 11, macOS and Ubuntu, each built on its own
+  platform from commit `9d1ff34` on 2026-11-20; nothing is on the Releases
+  page. The macOS build was installed on the owner's Mac the same day.
 - **macOS**: probes bound to the tunnel's interface count, by the owner's
   decision of 2026-11-20, after on-device checks with 4.2.2 on one tunnel
   ([docs/testing.md](docs/testing.md)): the light can turn green and
@@ -22,8 +22,10 @@ SHA-256 of each archive.
   not answer). 4.3.0 refuses a route that is not up or that has `LOCAL`,
   `BROADCAST`, `MULTICAST`, `BLACKHOLE` or `REJECT`, and reads `ping`'s
   exit 1 with `ping: bad interface name` (macOS 27.2.1) as an interface
-  that no longer exists. The checks run again on the installed 4.3.0;
-  until they pass, this is not acceptance on a device. A limit that stays:
+  that no longer exists. The same checks, run again on 4.3.0 installed on
+  that Mac, passed: the tunnel's own address is refused before sending. A
+  fault that automatic recovery has to repair is not proven on a Mac. A
+  limit that stays:
   when the Network Extension stalls while `scutil` still says `Connected`,
   `ping` may print a `sendto` error WGAL does not know yet; that is read as
   "the probe is unavailable", not as a failure, so it neither starts

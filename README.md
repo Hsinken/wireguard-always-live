@@ -264,8 +264,8 @@ Details: [packaging/linux/README.md](packaging/linux/README.md).
    The first line starts with `WGAL watchdog <version>`.
 
 Read [Platform status](#platform-status) first: on macOS, the green light
-and automatic recovery come with 4.3.0, which is not yet checked on an
-installed Mac.
+and automatic recovery come with 4.3.0, checked on one installed Mac with
+one tunnel.
 
 Details: [packaging/macos/README.md](packaging/macos/README.md).
 
@@ -365,7 +365,7 @@ As of 2026-11-20.
 | Windows 11 | The window 2.2.1 and the watchdog 2.3.1, from before the versions were unified, are in use on real tunnels on the developer's computer. 4.2.1 is not released for Windows yet |
 | Ubuntu without a desktop (`--no-window`) | 4.2.1 is installed on a test server. That build was made before the source moved to this repository. See the table below |
 | Ubuntu with a desktop | 2.2.1 was installed on a test computer with a desktop (GNOME). 4.2.1 is not installed on a desktop yet. The server's results do not stand for it |
-| macOS | A native build passes all tests on a Mac (macOS 27, Apple silicon). A 2.2.1 test build was installed, upgraded with a failure injected on purpose, and removed there. 4.2.1 was installed on that Mac and could not list the tunnels: macOS 27.2.1 writes the service type with a colon, which its parser refused. 4.2.2 (macOS only) reads it: installed on that Mac, its watchdog lists the tunnels and reads a registered tunnel's state. With 4.2.2 on that Mac, probes bound to one tunnel and a stop and start through the watchdog passed; the tunnel's own address was not refused, which 4.3.0 fixes. 4.3.0 is not installed there yet |
+| macOS | A native build passes all tests on a Mac (macOS 27, Apple silicon). A 2.2.1 test build was installed, upgraded with a failure injected on purpose, and removed there. 4.2.1 was installed on that Mac and could not list the tunnels: macOS 27.2.1 writes the service type with a colon, which its parser refused. 4.2.2 (macOS only) reads it: installed on that Mac, its watchdog lists the tunnels and reads a registered tunnel's state. With 4.2.2 on that Mac, probes bound to one tunnel and a stop and start through the watchdog passed; the tunnel's own address was not refused, which 4.3.0 fixes. 4.3.0, installed there, passed the same checks again, and refuses the tunnel's own address before sending |
 
 On the Ubuntu test server, with 4.2.1:
 
@@ -379,9 +379,8 @@ On the Ubuntu test server, with 4.2.1:
 **macOS from 4.3.0**: probes bound to the tunnel's interface count, by the
 owner's decision of 2026-11-20, so the light can turn green and automatic
 recovery can be turned on. One on-device check did not pass on 4.2.2 (the
-tunnel's own address was not refused) and is fixed in 4.3.0; until the
-checks pass again on an installed 4.3.0, this is not acceptance on a
-device. Not proven on a Mac: two tunnels, and a fault that automatic
+tunnel's own address was not refused) and is fixed in 4.3.0; the checks
+passed again on 4.3.0 installed on that Mac. Not proven on a Mac: two tunnels, and a fault that automatic
 recovery fails to fix.
 
 What each platform has proven, and how, is in
