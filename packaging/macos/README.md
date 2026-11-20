@@ -41,9 +41,10 @@ something goes wrong.
 >   again, through its watchdog, on the same tunnel: the light turned
 >   green; the LAN gateway, the Mac's LAN address and the tunnel's own
 >   address were all refused before sending, and the silent address got no
->   reply; a disconnect, a connect and a reconnect through `wgal` worked,
->   each followed by a verified probe; turning automatic recovery on was
->   accepted.
+>   reply; a disconnect, a connect and a reconnect through `wgal` each
+>   exited 0, the tunnel stayed disconnected until the connect, and the
+>   connect and the reconnect were each followed by a new verified probe
+>   and a green light; turning automatic recovery on was accepted.
 > - Not verified on a real Mac yet (NOT RUN): reading the Keychain after
 >   the screen locks; two tunnels at once.
 > - A fault that automatic recovery has to repair is BLOCKED: there is no
