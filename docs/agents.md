@@ -34,7 +34,8 @@ right, each one separately:
 1. **Get the release** for the platform from the
    [Releases page](https://github.com/Hsinken/wireguard-always-live/releases),
    and check the archive against the SHA-256 published there.
-   - If no release is published yet, build one on that computer: see
+   - If the Releases page has no archive for the platform, build one on
+     that computer: see
      "Build the release from source" in the guide.
 2. **Unpack it** and check the files against `RELEASE.txt`. It lists the
    commit the release was built from and the SHA-256 of every file in it.

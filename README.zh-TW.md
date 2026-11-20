@@ -13,7 +13,7 @@ WG Always Live（WGAL）替 Windows 11、macOS 與 Ubuntu（有桌面或伺服�
 >
 > 給 Agent：執行任何命令之前，先讀[用 AI Agent 安裝](#用-ai-agent-安裝)與[給 Agent 的規則](packaging/INSTALL.zh-TW.md#給-agent-的規則先讀)。
 
-> **狀態：尚未正式發布。** 4.2.1 是第一個公開版本。Releases 頁面還沒有發布任何版本：目前請在要安裝的那台電腦上自己建置發布包。見[各平台狀態](#各平台狀態)。
+> **狀態**：4.3.1 已在 [Releases 頁面](https://github.com/Hsinken/wireguard-always-live/releases)，由 GitHub Actions 從它的 tag 為 Windows 11、macOS 與 Ubuntu 建置，附每個壓縮包的 SHA-256。見[各平台狀態](#各平台狀態)。
 
 ## WGAL 是做什麼的
 
@@ -94,7 +94,7 @@ WGAL 是為了補強 WireGuard 官方程式對斷線判斷的不足而設計的�
    | Ubuntu | `wireguard-tools`，每個設定放在 `/etc/wireguard/<名稱>.conf` |
 
    還沒有的話，就停下來告訴人。不要自己安裝或設定 WireGuard。
-2. **取得壓縮包。** 從 [Releases 頁面](https://github.com/Hsinken/wireguard-always-live/releases)下載符合平台的壓縮包，用頁面上公布的 SHA-256 核對。**目前還沒有發布任何版本**：在那之前，照[自己建置發布包](#自己建置發布包)做。
+2. **取得壓縮包。** 從 [Releases 頁面](https://github.com/Hsinken/wireguard-always-live/releases)下載符合平台的壓縮包，用頁面上公布的 SHA-256（發布說明與 `SHA256SUMS`）核對。要自己建置的話，照[自己建置發布包](#自己建置發布包)做。
 
    | 平台 | 壓縮包 |
    |---|---|
@@ -262,14 +262,14 @@ WGAL 是為了補強 WireGuard 官方程式對斷線判斷的不足而設計的�
 以 2026-11-20 為準。
 
 - **一個版號**：4.2.1 是第一個公開版本，也是視窗、WatchDog、`wgal-mcp` 與 `wgal` 第一次共用一個版號。之前的版本沒有公開。
-- **還沒有發布**：Releases 頁面還沒有任何版本。請在要安裝的那台電腦上建置發布包，再用它安裝。
+- **Releases**：4.3.1 是 Releases 頁面上的第一個版本，由 GitHub Actions 從它的 tag 建置；之前的版本是手動建置的，沒有在那裡發布。
 
 | 平台 | 狀態 |
 |---|---|
-| Windows 11 | 以視窗 2.2.1 與 WatchDog 2.3.1（統一版號之前的版本）在真實的隧道上測試過。之後的版本還沒有在 Windows 實機上測試 |
-| 沒有桌面的 Ubuntu（`--no-window`） | 以 4.2.1 在一台 Ubuntu Server 26.04 上測試過；那個建置是在原始碼搬到這個 repo 之前做的。見下表 |
-| 有桌面的 Ubuntu | 以 2.2.1 在有桌面（GNOME）的 Ubuntu 26.04 上測試過。之後的版本還沒有在有桌面的電腦上測試；伺服器上的結果不代表桌面 |
-| macOS | 原生建置在一台 Mac（macOS 27，Apple 晶片）上通過全部測試。在那裡以 2.2.1 的測試建置測試過安裝、升級（刻意注入一次失敗）與移除。4.2.1 的 WatchDog 列不出隧道：macOS 27.2.1 把服務類型寫成冒號，它的解析器不接受。4.2.2（只發布 macOS）能讀：它的 WatchDog 列得出隧道，也讀得到已登記隧道的狀態。以 4.2.2 測試，綁定在一條隧道上的探測，以及經 WatchDog 的停止與啟動都通過；隧道自己的位址沒有被拒絕，4.3.0 修正。4.3.0 再通過同樣的檢查，隧道自己的位址在送出之前就被拒絕 |
+| Windows 11 | 以視窗 2.2.1 與 WatchDog 2.3.1（統一版號之前的版本）在真實的隧道上測試過。Releases 頁面的 4.3.1：從 4.2.1 升級；服務在執行，一條隧道已驗證（綠燈）；唯讀檢查 |
+| 沒有桌面的 Ubuntu（`--no-window`） | 以 4.2.1 在一台 Ubuntu Server 26.04 上測試過；那個建置是在原始碼搬到這個 repo 之前做的（見下表）。Releases 頁面的 4.3.1：從 4.2.1 升級，設定全部保留，綠燈，中斷、連線與重新連線都驗證過 |
+| 有桌面的 Ubuntu | 以 2.2.1 在有桌面（GNOME）的 Ubuntu 26.04 上測試過。Releases 頁面的 4.3.1：以 `setup.sh` 從 2.3.1 升級；WatchDog 在執行，視窗在桌面工作階段裡執行，一條隧道已驗證（綠燈）；唯讀檢查 |
+| macOS | 原生建置在一台 Mac（macOS 27，Apple 晶片）上通過全部測試。在那裡以 2.2.1 的測試建置測試過安裝、升級（刻意注入一次失敗）與移除。4.2.1 的 WatchDog 列不出隧道：macOS 27.2.1 把服務類型寫成冒號，它的解析器不接受。4.2.2（只發布 macOS）能讀：它的 WatchDog 列得出隧道，也讀得到已登記隧道的狀態。以 4.2.2 測試，綁定在一條隧道上的探測，以及經 WatchDog 的停止與啟動都通過；隧道自己的位址沒有被拒絕，4.3.0 修正。4.3.0 再通過同樣的檢查，隧道自己的位址在送出之前就被拒絕。Releases 頁面的 4.3.1：從 4.3.0 升級，設定全部保留，再通過同樣的檢查 |
 
 在一台 Ubuntu Server 26.04 上，以 4.2.1：
 

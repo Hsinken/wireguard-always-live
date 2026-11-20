@@ -20,10 +20,9 @@ recovery fails, it can tell you on Telegram.
 > the [rules for an agent](packaging/INSTALL.md#rules-for-an-agent-read-first)
 > before you run anything.
 
-> **Status: pre-release.** 4.2.1 is the first public version. No release
-> has been published on the Releases page yet: for now, build the archive
-> on the computer it will be installed on. See
-> [Platform status](#platform-status).
+> **Status**: 4.3.1 is on the [Releases page](https://github.com/Hsinken/wireguard-always-live/releases), built by GitHub
+> Actions from its tag for Windows 11, macOS and Ubuntu, with each
+> archive's SHA-256. See [Platform status](#platform-status).
 
 ## What WGAL is for
 
@@ -134,8 +133,8 @@ Read it first. In short:
    WireGuard yourself.
 2. **Get the archive.** Download the platform's archive from the
    [Releases page](https://github.com/Hsinken/wireguard-always-live/releases)
-   and check it against the SHA-256 published there. **No release is
-   published yet**: until one is, follow
+   and check it against the SHA-256 published there (in the release notes
+   and in `SHA256SUMS`). To build it yourself instead, follow
    [Build the release archive yourself](#build-the-release-archive-yourself).
 
    | Platform | Archive |
@@ -356,16 +355,16 @@ As of 2026-11-20.
 - **One version**: 4.2.1 is the first public version. It is also the first
   in which the window, the watchdog, `wgal-mcp` and `wgal` share one version
   number. Earlier versions were not published.
-- **No release yet**: nothing has been published on the Releases page.
-  Build the archive on the computer it will be installed on, then install
-  from it.
+- **Releases**: 4.3.1 is the first version on the Releases page, built by
+  GitHub Actions from its tag; earlier versions were built by hand and not
+  published there.
 
 | Platform | Status |
 |---|---|
-| Windows 11 | Tested on real tunnels with the window 2.2.1 and the watchdog 2.3.1, from before the versions were unified. No version since then has been tested on Windows on a device |
-| Ubuntu without a desktop (`--no-window`) | Tested on an Ubuntu Server 26.04 with 4.2.1, a build made before the source moved to this repository. See the table below |
-| Ubuntu with a desktop | Tested with 2.2.1 on Ubuntu 26.04 with a desktop (GNOME). No version since then has been tested with a desktop; the server's results do not stand for it |
-| macOS | A native build passes all tests on a Mac (macOS 27, Apple silicon). Installing, upgrading (with a failure injected on purpose) and removing were tested there with a 2.2.1 test build. With 4.2.1 the watchdog could not list the tunnels: macOS 27.2.1 writes the service type with a colon, which its parser refused. 4.2.2 (macOS only) reads it: its watchdog lists the tunnels and reads a registered tunnel's state. With 4.2.2, probes bound to one tunnel and a stop and start through the watchdog passed; the tunnel's own address was not refused, which 4.3.0 fixes. 4.3.0 passed the same checks again, and refuses the tunnel's own address before sending |
+| Windows 11 | Tested on real tunnels with the window 2.2.1 and the watchdog 2.3.1, from before the versions were unified. 4.3.1 from the Releases page: an upgrade from 4.2.1; its service runs and a tunnel is verified (green); checked read only |
+| Ubuntu without a desktop (`--no-window`) | Tested on an Ubuntu Server 26.04 with 4.2.1, a build made before the source moved to this repository (see the table below). 4.3.1 from the Releases page: an upgrade from 4.2.1 with every setting kept, a green light, and a verified disconnect, connect and reconnect |
+| Ubuntu with a desktop | Tested with 2.2.1 on Ubuntu 26.04 with a desktop (GNOME). 4.3.1 from the Releases page: an upgrade from 2.3.1 with `setup.sh`; the watchdog runs, the window runs in the desktop session and a tunnel is verified (green); checked read only |
+| macOS | A native build passes all tests on a Mac (macOS 27, Apple silicon). Installing, upgrading (with a failure injected on purpose) and removing were tested there with a 2.2.1 test build. With 4.2.1 the watchdog could not list the tunnels: macOS 27.2.1 writes the service type with a colon, which its parser refused. 4.2.2 (macOS only) reads it: its watchdog lists the tunnels and reads a registered tunnel's state. With 4.2.2, probes bound to one tunnel and a stop and start through the watchdog passed; the tunnel's own address was not refused, which 4.3.0 fixes. 4.3.0 passed the same checks again, and refuses the tunnel's own address before sending. 4.3.1 from the Releases page: an upgrade from 4.3.0 with every setting kept; the same checks passed again |
 
 On an Ubuntu Server 26.04, with 4.2.1:
 

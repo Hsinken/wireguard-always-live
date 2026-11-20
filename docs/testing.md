@@ -130,7 +130,32 @@ in the background first.
 
 ## What has been proven on a device
 
-As of 2026-11-19. Anything not listed is not proven.
+As of 2026-11-20. Anything not listed is not proven.
+
+### The 4.3.1 release builds
+
+The archives on the Releases page, built by GitHub Actions from the tag
+`v4.3.1`, were downloaded from there, checked against `SHA256SUMS` and
+each `RELEASE.txt`, installed as upgrades and checked, on 2026-11-20:
+
+- **Windows 11**: an upgrade from 4.2.1 with `setup.cmd`. The four
+  programs are 4.3.1, the service runs, and a monitored tunnel is green
+  (verified) with a probe reply. Checked read only.
+- **Ubuntu Server 26.04** (`--no-window`): an upgrade from 4.2.1. Every
+  setting was kept and the light is green; a disconnect, a connect and a
+  reconnect through `wgal` each exited 0, the connect and the reconnect
+  each verified; the unit's boot-start setting was the same after.
+- **Ubuntu 26.04 with a desktop** (GNOME): an upgrade from 2.3.1 with
+  `setup.sh`. The watchdog 4.3.1 runs, the menu and autostart entries are
+  installed, the window's process runs in the desktop session after the
+  upgrade, and a monitored tunnel is green (verified). Checked read only;
+  opening the window from the menu and its tray item were not checked.
+- **macOS 27.2.1** (Apple silicon): an upgrade from 4.3.0 with
+  `install.sh`. The app's signature verifies, every setting was kept and
+  the light is green; the same checks as 4.3.0's passed again: the LAN
+  gateway, the Mac's LAN address and the tunnel's own address refused
+  before sending, the silent address `no_reply`, and a disconnect, a
+  connect and a reconnect, the connect and the reconnect each verified.
 
 ### Ubuntu
 
@@ -156,7 +181,8 @@ the installed watchdog (root), with WGAL 4.1.0, then 4.2.1:
   - a real fault that automatic recovery fails to fix (the alert, retries
     and the "recovered" message);
   - a probe through an interface that vanishes during it (fakes only);
-  - a desktop: these results come from a server without one.
+  - a desktop beyond the read-only checks of 4.3.1 above (opening the
+    window from the menu, its tray item).
 - **By reading the code** (not tested): if the tunnel itself fails to come
   up at boot, WGAL does not start it. It acts only on a tunnel it has seen
   connected.
@@ -170,8 +196,8 @@ On a Windows 11 computer:
     ordinary user and as an administrator;
   - a bound probe with one tunnel, including probes that must be refused.
 - **Tested on real tunnels**: the window 2.2.1 and the watchdog 2.3.1,
-  from before the versions were unified. No version since then has been
-  tested on Windows on a device.
+  from before the versions were unified. For 4.3.1 see "The 4.3.1 release
+  builds" above.
 - **Not proven**:
   - two tunnels;
   - controlling one tunnel without touching another;

@@ -23,6 +23,11 @@ SHA-256 of each archive.
   and before every release, and no longer on tags.
 - The 4.3.0 archives were built by hand on each platform from commit
   `9d1ff34` and were not published.
+- **Published** on the Releases page on 2026-11-20 by the release
+  workflow. The archives from there were then installed as upgrades and
+  checked on Windows 11, Ubuntu Server 26.04, Ubuntu 26.04 with a desktop
+  and macOS 27.2.1 ([docs/testing.md](docs/testing.md), "The 4.3.1 release
+  builds").
 - Every compatibility minimum stays 4.2.1.
 
 ## 4.3.0 (2026-11-20)
