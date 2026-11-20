@@ -31,7 +31,7 @@ WGAL 不是 VPN，也不取代官方 WireGuard。它只監看官方 WireGuard �
 
 ## 去哪裡取得
 
-- **發布包**：從 [Releases 頁面](https://github.com/Hsinken/wireguard-always-live/releases) 下載符合平台的壓縮包，用頁面上公布的 SHA-256 核對。解開之後，再用 `RELEASE.txt` 核對包內的檔案（見下一節）。前一個核對才證明下載的檔案是真的；`RELEASE.txt` 只證明檔案與建置紀錄一致。
+- **發布包**：從 [Releases 頁面](https://github.com/Hsinken/wireguard-always-live/releases) 下載符合平台的壓縮包，用頁面上公布的 SHA-256（發布說明與 `SHA256SUMS`）核對。從 4.3.1 起，那裡的壓縮包由 GitHub Actions 從版本的 tag 建置，用的是本指南最後「從原始碼建置發布包」同樣的 make-release 腳本（`.github/workflows/release.yml`）。解開之後，再用 `RELEASE.txt` 核對包內的檔案（見下一節）。前一個核對才證明下載的檔案是真的；`RELEASE.txt` 只證明檔案與建置紀錄一致。
 - **從原始碼**：在要安裝的那台電腦上，照本指南最後的「從原始碼建置發布包」建置，再用產生的發布包照常安裝。
 
 ## 壓縮包內容

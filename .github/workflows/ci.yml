@@ -1,16 +1,22 @@
 # Baseline checks. Everything here runs against fakes and fixtures only: no job
-# may install services, touch network interfaces, or need secrets.
+# may install services, touch network interfaces, or need secrets. release.yml
+# runs them again on the commit a version tag names, before it builds.
 name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
+# github.workflow is the caller's name when release.yml calls this one, so a
+# release run and a push to the same ref never cancel each other.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:

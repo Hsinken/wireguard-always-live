@@ -85,7 +85,11 @@ traffic, and, when you allow it, reconnects the one that failed.
 
 - **A release**: download the archive for the platform from the
   [Releases page](https://github.com/Hsinken/wireguard-always-live/releases),
-  and check it against the SHA-256 published there. Then, after unpacking,
+  and check it against the SHA-256 published there (in the release notes
+  and in `SHA256SUMS`). From 4.3.1 on, the archives there are built by
+  GitHub Actions from the version's tag, with the same make-release scripts
+  as "Build the release from source" below
+  (`.github/workflows/release.yml`). Then, after unpacking,
   check its files against `RELEASE.txt` (below). The first check is what
   tells you the download is genuine; `RELEASE.txt` only tells you the files
   match the build record.

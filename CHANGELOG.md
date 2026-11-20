@@ -8,6 +8,23 @@ Each release archive carries a `RELEASE.txt` with the commit it was built
 from and the SHA-256 of every file in it. The Releases page gives the
 SHA-256 of each archive.
 
+## 4.3.1 (2026-11-20)
+
+- **Released for**: Windows 11, macOS and Ubuntu. The archives on the
+  Releases page are built by GitHub Actions from the tag `v4.3.1`
+  (`.github/workflows/release.yml`), on GitHub's runners (Ubuntu 24.04,
+  macOS 15 on Apple silicon, Windows Server 2025), with each platform's
+  `packaging/*/make-release` script, after the checks of `ci.yml` passed on
+  the same commit. The release notes and `SHA256SUMS` give each archive's
+  SHA-256; each `RELEASE.txt` names the commit.
+- **No change to the programs or the install scripts** since 4.3.0: this
+  version is the first built and published this way. New: the release
+  workflow; `ci.yml` now runs on pushes to `main`, on pull requests and
+  before every release, and no longer on tags.
+- The 4.3.0 archives were built by hand on each platform from commit
+  `9d1ff34` and were not published.
+- Every compatibility minimum stays 4.2.1.
+
 ## 4.3.0 (2026-11-20)
 
 - **Released for**: Windows 11, macOS and Ubuntu, each built on its own

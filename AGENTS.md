@@ -229,7 +229,7 @@ Crate names use the `wgal-` prefix.
 | `crates/wgal-client/` | The way to the watchdog that `wgal-mcp` and `wgal` share |
 | `crates/wgal-cli/` | `wgal`, the English command line |
 | `docs/` | The English guides: architecture, testing, languages, and the guide for agents |
-| `.github/workflows/ci.yml` | CI baseline (Linux, Windows, macOS) |
+| `.github/workflows/` | `ci.yml`, the CI baseline (Linux, Windows, macOS), on pushes to `main`, pull requests and before a release; `release.yml`, the release build from a version tag |
 
 Dependencies point one way: `wgal-desktop` uses `wgal-protocol`, and of
 `wgal-platform` only these functions: on Windows
@@ -402,7 +402,18 @@ Release zips are built on each platform itself
 (`packaging/windows/make-release.ps1`, `packaging/linux/make-release.sh`,
 `packaging/macos/make-release.sh`); they write only `target/` and `dist/`
 and install nothing. An agent working on this repository for the owner
-builds a release only when the owner asks. Building one from source on the
+builds a release only when the owner asks. The archives on the Releases
+page are built with the same scripts by `.github/workflows/release.yml`
+(from 4.3.1): pushing the tag `v<version>` (the workspace version) on a
+commit of `main` runs `ci.yml` on that commit, builds the three archives
+on GitHub's runners, checks that each `RELEASE.txt` names that version and
+commit, and publishes them with their SHA-256 and a `SHA256SUMS` file; a
+manual run of the workflow does everything but publish. Pushing a version
+tag publishes a release: do it only when the owner asks, after `ci.yml`
+has passed on that commit, and never on a commit whose message has
+`[skip ci]` (GitHub then runs nothing for the tag). The workflow releases
+all three platforms; a version for one platform only is built by hand on
+that platform and not tagged. Building one from source on the
 computer it will be installed on, as the README says, needs nobody's
 request. `packaging/INSTALL.md` (English) and
 `packaging/INSTALL.zh-TW.md` are the install and removal guide every zip
