@@ -41,8 +41,8 @@
 //! address; the core checks the route again after the probe and discards the
 //! reply if it moved. `bound_icmp_probe` was `Unknown` until the on-device
 //! tests summarized in `docs/testing.md`. It is `Supported`
-//! since the owner's request of 2026-11-19, after these passed on a
-//! one-tunnel Ubuntu Server 26.04 through the installed watchdog (root),
+//! since the owner's request of 2026-11-19, after these passed with one
+//! tunnel under test on Ubuntu Server 26.04 through the installed watchdog (root),
 //! end to end: the target answered through the tunnel before and after a
 //! stop and start (U3 items 1 and 3), a silent address inside the tunnel's
 //! routes got no reply (`NoReply`, item 3a), and the LAN gateway and the

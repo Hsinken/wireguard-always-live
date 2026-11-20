@@ -11,15 +11,15 @@ something goes wrong.
 >   `install.sh`, `uninstall.sh` and the systemd service were installed,
 >   upgraded and removed for real in WSL.
 > - On 2026-11-12, 2.2.0 was installed with `setup.sh` on an Ubuntu 26.04
->   test computer with a desktop. Once the window's packages were added,
+>   computer with a desktop. Once the window's packages were added,
 >   the window started in the desktop session without errors and its tray
 >   item registered; opening it from the applications menu was not
->   confirmed. It was then reinstalled as 2.2.1, and on 2026-11-13 an
->   upgrade test ran as root there, one run with a failure injected after
->   the service stopped: PASS.
+>   confirmed. On 2026-11-13 an upgrade test from 2.2.1 ran as root on
+>   Ubuntu 26.04 with a desktop, one run with a failure injected after the
+>   service stopped: PASS.
 > - On 2026-11-19, 4.0.0, 4.1.0 and then 4.2.1 were installed with
->   `--no-window` on an Ubuntu Server 26.04 with one `wg-quick` tunnel,
->   and tested there with 4.1.0 and 4.2.1 through the watchdog: bound
+>   `--no-window` on Ubuntu Server 26.04 and tested with 4.1.0 and 4.2.1
+>   through the watchdog, with one `wg-quick` tunnel under test: bound
 >   probes, a verified disconnect, connect and reconnect, turning automatic
 >   recovery on, and the settings kept across a restart of the watchdog and
 >   a reboot ([docs/testing.md](../../docs/testing.md)).
