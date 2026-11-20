@@ -6,7 +6,7 @@ The steps to install, check and remove WGAL are in `INSTALL.md`. This file
 says what the scripts do, where the files are and where to look when
 something goes wrong.
 
-> **Status (2026-11-19)**:
+> **Status (2026-11-20)**:
 > - Built natively on Ubuntu 24.04 in WSL; all tests and shellcheck pass.
 >   `install.sh`, `uninstall.sh` and the systemd service were installed,
 >   upgraded and removed for real in WSL.
@@ -23,9 +23,17 @@ something goes wrong.
 >   probes, a verified disconnect, connect and reconnect, turning automatic
 >   recovery on, and the settings kept across a restart of the watchdog and
 >   a reboot ([docs/testing.md](../../docs/testing.md)).
+> - On 2026-11-20, 4.3.1 from the Releases page (built by GitHub Actions)
+>   was installed as an upgrade on an Ubuntu Server 26.04 (`--no-window`,
+>   from 4.2.1: every setting kept, green, a verified disconnect, connect
+>   and reconnect) and on Ubuntu 26.04 with a desktop (`setup.sh`, from
+>   2.3.1: the watchdog runs, the window runs in the desktop session, the
+>   menu and autostart entries are installed, a tunnel is verified; checked
+>   read only).
 > - These are "installed on a device", not "accepted on a device".
-> - **Not done yet** (NOT RUN): 4.2.1 on a computer with a desktop; two
->   tunnels; a real fault that automatic recovery fails to fix.
+> - **Not done yet** (NOT RUN): with a desktop, opening the window from the
+>   menu and its tray item; two tunnels; a real fault that automatic
+>   recovery fails to fix.
 
 ## How it works
 
