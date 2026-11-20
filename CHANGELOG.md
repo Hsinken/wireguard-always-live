@@ -29,7 +29,7 @@ SHA-256 of each archive.
 
 - **Released for**: Windows 11, macOS and Ubuntu, each built on its own
   platform from commit `9d1ff34` on 2026-11-20; nothing is on the Releases
-  page. The macOS build was installed on the owner's Mac the same day.
+  page.
 - **macOS**: probes bound to the tunnel's interface count, by the owner's
   decision of 2026-11-20, after on-device checks with 4.2.2 on one tunnel
   ([docs/testing.md](docs/testing.md)): the light can turn green and
@@ -39,8 +39,8 @@ SHA-256 of each archive.
   not answer). 4.3.0 refuses a route that is not up or that has `LOCAL`,
   `BROADCAST`, `MULTICAST`, `BLACKHOLE` or `REJECT`, and reads `ping`'s
   exit 1 with `ping: bad interface name` (macOS 27.2.1) as an interface
-  that no longer exists. The same checks, run again on 4.3.0 installed on
-  that Mac, passed: the tunnel's own address is refused before sending. A
+  that no longer exists. The same checks, run again with 4.3.0 on that
+  Mac, passed: the tunnel's own address is refused before sending. A
   fault that automatic recovery has to repair is not proven on a Mac. A
   limit that stays:
   when the Network Extension stalls while `scutil` still says `Connected`,
@@ -57,9 +57,9 @@ SHA-256 of each archive.
 
 ## 4.2.2 (2026-11-20)
 
-- **Released for**: macOS only: built for the owner's Mac and installed
-  there on 2026-11-20; nothing is on the Releases page. Windows and Ubuntu
-  did not change and stay at 4.2.1.
+- **Released for**: macOS only, built on a Mac on 2026-11-20; nothing is
+  on the Releases page. Windows and Ubuntu did not change and stay at
+  4.2.1.
 - **Fixed on macOS**: on macOS 27.2.1 the watchdog could not list the
   tunnels (`manager_query_failed`). That macOS writes the service type in
   `scutil --nc list` as `[VPN:com.wireguard.macos]`, with a colon; the
@@ -72,8 +72,7 @@ SHA-256 of each archive.
 The first public version. Earlier versions were developed before the source
 was published and were never released here.
 
-- **Released for**: no platform on the Releases page yet. An Ubuntu build,
-  made before the source was published, runs on a test server. Release
+- **Released for**: no platform on the Releases page yet. Release
   archives for Windows 11, macOS and Ubuntu will be listed here when they
   are built from this repository.
 - **What it has**: everything the [README](README.md) describes, including

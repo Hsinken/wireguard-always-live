@@ -163,15 +163,15 @@ the installed watchdog (root), with WGAL 4.1.0, then 4.2.1:
 
 ### Windows 11
 
-On the developer's computer:
+On a Windows 11 computer:
 
 - **PASS**:
   - listing the tunnel services and mapping each to its interface, as an
     ordinary user and as an administrator;
   - a bound probe with one tunnel, including probes that must be refused.
-- **In use**: the window 2.2.1 and the watchdog 2.3.1, from before the
-  versions were unified, run on real tunnels there. 4.2.1 is not released
-  for Windows yet.
+- **Tested on real tunnels**: the window 2.2.1 and the watchdog 2.3.1,
+  from before the versions were unified. No version since then has been
+  tested on Windows on a device.
 - **Not proven**:
   - two tunnels;
   - controlling one tunnel without touching another;
@@ -184,13 +184,13 @@ On the developer's computer:
 - **PASS**: a native build and every test on a Mac (macOS 27, Apple
   silicon), and installing, upgrading (with a failure injected on purpose)
   and removing a 2.2.1 test build.
-- **Found on a device**: 4.2.1, installed on that Mac (macOS 27.2.1), could
+- **Found on a device**: 4.2.1, on that Mac (macOS 27.2.1), could
   not list the tunnels: that macOS writes the service type with a colon
   (`[VPN:com.wireguard.macos]`), and the parser accepted only a slash. Fixed
   in 4.2.2; the fixtures `nc_list_macos27.txt` and `nc_status_macos27.txt`
   copy the real layout and structure with invented values.
-- **PASS with 4.2.2** (installed on that Mac on 2026-11-20, checked read
-  only): the watchdog runs, lists both of the official app's tunnels, and
+- **PASS with 4.2.2** (on that Mac on 2026-11-20, checked read only): the
+  watchdog runs, lists the official app's tunnels, and
   reads a registered tunnel's state as connected, as it is. The light was
   gray (`not_configured`) until a recovery check target was set, then red
   (`path_unverified`): 4.2.2 does not count a bound probe on macOS.
@@ -218,8 +218,8 @@ On the developer's computer:
     both as `NotFound`.
 - **4.3.0**: the bound ICMP probe is `Supported`, by the owner's decision
   of 2026-11-20, although the check above failed on 4.2.2.
-- **Checked again with 4.3.0** (installed on that Mac by the owner on
-  2026-11-20, the same tunnel, through the installed watchdog):
+- **Checked again with 4.3.0** (on that Mac on 2026-11-20, the same
+  tunnel, through the installed watchdog):
   - **PASS**: the window, the watchdog, `wgal` and `wgal-mcp` are 4.3.0,
     and the watchdog reports the bound ICMP probe `Supported`; the light
     turned green once the recovery check target answered through the
@@ -232,8 +232,8 @@ On the developer's computer:
     probe and a green light; turning automatic recovery on was
     accepted; the end state was the state before, the tunnel's
     `ConnectCount` two higher.
-  - The owner had turned automatic recovery on after the upgrade; the
-    check turned it off and on again and left it on.
+  - Automatic recovery was on before the check; the check turned it off
+    and on again and left it as it was.
   - The bound ICMP probe stays `Supported`, now on the device, one tunnel.
 - **Not proven**: two tunnels; the Keychain while the screen is locked;
   monitoring after the window quits or the screen locks; TCP probes; a
@@ -255,7 +255,7 @@ where it stands.
 | W5 | Windows: a tunnel removed in the official app | BLOCKED |
 | W6 | Windows: the named pipe's access list and the caller's identity | NOT RUN on a device (local Win32 tests only) |
 | W7 | Windows: monitoring goes on with the window closed, quit or signed out | NOT RUN as a check |
-| W8 | Windows: install, upgrade, removal and revert | NOT RUN as an acceptance check (the service is installed and in use on the developer's computer) |
+| W8 | Windows: install, upgrade, removal and revert | NOT RUN as an acceptance check |
 | W9 | Windows: telling the computer's own network outage from a tunnel fault, and network change notices | BLOCKED |
 | U0 | Ubuntu: the tools' versions and output formats match the parsers | PASS |
 | U1 | Ubuntu: a controlled stop and start of one unit, waiting for its state | PASS |
@@ -265,7 +265,7 @@ where it stands.
 | U5 | Ubuntu: controlling one tunnel leaves the others alone | NOT RUN (one tunnel only) |
 | U6 | Ubuntu: the ownership checks at registration | PASS (indirect inside `/etc/wireguard`) |
 | U7 | Ubuntu: discovery tells `wg-quick` tunnels from other managers | PASS |
-| M1 | macOS: `scutil --nc list` and `status` match the parser | PASS (4.2.2's installed watchdog on macOS 27.2.1, 2026-11-20): it lists both tunnels; it reads a registered tunnel's state, and, in its probe rounds, the interface name and `ConnectCount` |
+| M1 | macOS: `scutil --nc list` and `status` match the parser | PASS (4.2.2's installed watchdog on macOS 27.2.1, 2026-11-20): it lists the tunnels; it reads a registered tunnel's state, and, in its probe rounds, the interface name and `ConnectCount` |
 | M2 | macOS: the interface is found from the configuration each time; the connection count tells reconnects apart | PASS (4.2.2, 2026-11-20, one tunnel): read again after a reconnect, `ConnectCount` one higher |
 | M3 | macOS: `ping -b` is bound to the interface | 4.2.2, 2026-11-20: a reply from the target and `no_reply` from a silent address in the tunnel's routes, PASS; the LAN gateway and the Mac's LAN address refused before sending, PASS; the tunnel's own address not refused (no reply), FAIL. 4.3.0 installed, 2026-11-20: all three refused before sending, the same silent address `no_reply`, PASS |
 | M4 | macOS: routes, state and probes during a stop, with timestamps | PASS (4.2.2, 2026-11-20): over a 15 s stop, the state, the route and a probe on the old interface, each sample with its own times |

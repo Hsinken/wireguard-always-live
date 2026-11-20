@@ -38,7 +38,12 @@ fails.
   language (same decision): the watchdog's built-in Telegram templates are
   the GUI's English ones.
 - Plans, review notes and on-device records are kept outside this
-  repository. They hold real names and addresses.
+  repository. They hold real names and addresses. So does which computer
+  has which version installed or in use: this repository says only what
+  was tested, on which OS and version, and the result, never whose computer
+  it was or what it runs now (owner decision of 2026-11-20). `.gitignore`
+  keeps the private records' folders out, and every change is checked for
+  private data before it is pushed.
 
 ### File ownership
 
@@ -410,7 +415,10 @@ on GitHub's runners, checks that each `RELEASE.txt` names that version and
 commit, and publishes them with their SHA-256 and a `SHA256SUMS` file; a
 manual run of the workflow does everything but publish. Pushing a version
 tag publishes a release: do it only when the owner asks, after `ci.yml`
-has passed on that commit, and never on a commit whose message has
+has passed on that commit, while the repository's tag ruleset that forbids
+updating or deleting a `v*` tag, with no bypass, is active (`gh api
+repos/Hsinken/wireguard-always-live/rulesets`; a tag that names the wrong
+commit is never moved: the next version is released instead), and never on a commit whose message has
 `[skip ci]` (GitHub then runs nothing for the tag). The workflow releases
 all three platforms; a version for one platform only is built by hand on
 that platform and not tagged. If its `publish` job fails after it made the

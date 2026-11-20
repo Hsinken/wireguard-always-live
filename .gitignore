@@ -6,3 +6,17 @@ node_modules/
 *.log
 .DS_Store
 /dist/
+
+# Private records live only in the owner's private repository, never here:
+# plans, reviews, hand-off notes, on-device evidence, and which computer
+# runs which version (AGENTS.md, "Scope and authority").
+/docs/handoff/
+/docs/plan/
+/docs/plans/
+/docs/review/
+/docs/reviews/
+/docs/testing/
+/docs/architecture/
+/packaging/macos/DISTRIBUTION.zh-TW.md
+evidence/
+*.private.*
