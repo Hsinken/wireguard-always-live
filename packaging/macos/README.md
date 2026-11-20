@@ -45,6 +45,11 @@ something goes wrong.
 >   exited 0, the tunnel stayed disconnected until the connect, and the
 >   connect and the reconnect were each followed by a new verified probe
 >   and a green light; turning automatic recovery on was accepted.
+> - 4.3.1 from the Releases page (built by GitHub Actions; 2026-11-20),
+>   installed as an upgrade from 4.3.0, kept every setting and passed the
+>   same checks again: green; the three addresses refused before sending;
+>   the silent address no reply; a disconnect, a connect and a reconnect,
+>   the connect and the reconnect each verified.
 > - Not verified on a real Mac yet (NOT RUN): reading the Keychain after
 >   the screen locks; two tunnels at once.
 > - A fault that automatic recovery has to repair is BLOCKED: there is no
